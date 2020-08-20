@@ -1,13 +1,20 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { swapTokens, getSwapParams } from "uniswap-v2-helper"
-import { RedisClient } from '@nestjs/microservices/external/redis.interface';
-import { promisify } from 'util';
+import { Injectable } from '@nestjs/common';
 import { App } from '@onboardmoney/sdk';
 import { RedisService } from 'nestjs-redis';
 
-import { ethers, utils } from "ethers";
 import { User, Tweet } from './types';
-import { swap, deposit } from "./commands"
+import { 
+  GIVE_COMMAND,
+  HARVEST_COMMAND,
+  PLANT_COMMAND,
+  POLINATE_COMMAND,
+  UNROOT_COMMAND,
+  give,
+  harvest,
+  plant,
+  polinate,
+  unroot
+} from "./commands"
 
 @Injectable()
 export class AppService {
@@ -21,13 +28,19 @@ export class AppService {
 
   async processCommand(user: User, command: string, args: any[]): Promise<void> {
     switch (command) {
-      case "deposit":
-        return deposit(user, args)
-      case "swap":
-        return swap(user, args)
+      case PLANT_COMMAND:
+        return plant(user)
+      case HARVEST_COMMAND:
+        return harvest(user, args)
+      case POLINATE_COMMAND:
+        return polinate(user)
+      case UNROOT_COMMAND:
+        return unroot(user, args)
+      case GIVE_COMMAND:
+        return give(user, args)
     }
   }
-      
+
   private getUserKey(userId: string): string {
     return 'user:' + userId
   }
@@ -58,7 +71,7 @@ export class AppService {
         if (err) return reject(err)
         return resolve(JSON.parse(ret))
       })
-    })  
+    })
   }
 
   async processTweet(tweet: Tweet): Promise<void> {

@@ -1,6 +1,7 @@
 import { User } from "src/types";
 
-export async function plant(user: User, args: any[]): Promise<any> {
-  const [amount, input, output] = args;
+export const PLANT_COMMAND = "plant"
+
+export async function plant(user: User): Promise<any> {
   
 }
