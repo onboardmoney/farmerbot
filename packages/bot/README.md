@@ -5,10 +5,15 @@ it ain't much but it's honest work
 ## commands
 
 `@thefarmerbot plant` create user wallet, deposit dai, and stake
+
 `@thefarmerbot harvest to 0x1234 / abcd.eth` withdraw reward to account
+
 `@thefarmerbot polinate` withdraw reward and re-plant
+
 `@thefarmerbot unroot to 0x1234 / abcd.eth` withdraw stake and reward to account
+
 `@thefarmerbot give 10 trees to @person` send trees to person
+
 
 ## architecture
 
