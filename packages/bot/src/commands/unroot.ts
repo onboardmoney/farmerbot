@@ -19,8 +19,11 @@ export async function unroot(user: User, args: any[]): Promise<any> {
   // get provider
   const provider = ethers.getDefaultProvider(process.env.NETWORK);
   // init contracts
-  const rdai = new ethers.Contract(addresses.rDAI, abis.rDAI, provider);
-  const dai = new ethers.Contract(addresses.DAI, abis.DAI, provider);
+  const rdai = new ethers.Contract(
+    addresses[process.env.NETWORK].rDAI,
+    abis.rDAI,
+    provider
+  );
   // get rdai balance
   const amt = await rdai.balanceOf(user.address);
   // assert non-zero balance

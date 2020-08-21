@@ -17,8 +17,16 @@ export async function plant(user: User): Promise<any> {
   // get provider
   const provider = ethers.getDefaultProvider(process.env.NETWORK);
   // init contracts
-  const rdai = new ethers.Contract(addresses.rDAI, abis.rDAI, provider);
-  const dai = new ethers.Contract(addresses.DAI, abis.DAI, provider);
+  const rdai = new ethers.Contract(
+    addresses[process.env.NETWORK].rDAI,
+    abis.rDAI,
+    provider
+  );
+  const dai = new ethers.Contract(
+    addresses[process.env.NETWORK].DAI,
+    abis.DAI,
+    provider
+  );
   // get dai balance
   const amt = await dai.balanceOf(user.address);
   // assert non-zero balance
@@ -47,7 +55,7 @@ export async function plant(user: User): Promise<any> {
     txs.push(
       await rdai.populateTransaction.mintWithNewHat(
         amt,
-        [user.address, addresses.trees],
+        [user.address, addresses[process.env.NETWORK].trees],
         [50, 50]
       )
     );
