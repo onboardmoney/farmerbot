@@ -14,7 +14,7 @@
     ]
   },
   "dependencies": {
-    "@farmerbot/contracts": "^1.0.0",
+    "@farmerbot/bot": "^0.0.1",
     "@apollo/react-hooks": "^3.1.5",
     "@ethersproject/contracts": "^5.0.1",
     "@ethersproject/providers": "^5.0.4",
