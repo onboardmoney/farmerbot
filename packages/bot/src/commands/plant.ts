@@ -52,11 +52,9 @@ export async function plant(user: User): Promise<any> {
       )
     );
   }
-  // assert sufficient gas money
-  // todo @thegostep
+  // @thegostep todo: assert sufficient gas money
   // submit txs to onboard.money
   console.log(txs);
   const txReceipt = await onboardmoney.sendBatch({ txs });
-  // notify db of successful command
-  // todo: @itirabasso
+  // @itirabasso todo: notify db of successful command
 }
