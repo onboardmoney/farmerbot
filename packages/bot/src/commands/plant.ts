@@ -8,6 +8,7 @@ import abis from "../contracts/abis";
 export const PLANT_COMMAND = "plant";
 
 // send full user dai balance to rdai contract
+// @thegostep todo: implement user gas payments
 export async function plant(user: User): Promise<any> {
   // init onboard.money
   const onboardmoney = new App(

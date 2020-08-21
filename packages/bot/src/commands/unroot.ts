@@ -9,6 +9,7 @@ export const UNROOT_COMMAND = "polinate";
 
 // withdraw full rdai balance to target account
 // @thegostep todo: permit withdraw of partial balance?
+// @thegostep todo: implement user gas payments
 export async function unroot(user: User, args: any[]): Promise<any> {
   const [_, target] = args;
   // init onboard.money
