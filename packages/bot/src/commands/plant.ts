@@ -15,7 +15,7 @@ export async function plant(user: User): Promise<any> {
     `https://${process.env.NETWORK}.onboard.money`
   );
   // get provider
-  const provider = ethers.getDefaultProvider();
+  const provider = ethers.getDefaultProvider(process.env.NETWORK);
   // init contracts
   const rdai = new ethers.Contract(addresses.rDAI, abis.rDAI, provider);
   const dai = new ethers.Contract(addresses.DAI, abis.DAI, provider);
