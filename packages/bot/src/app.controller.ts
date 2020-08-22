@@ -1,10 +1,10 @@
 import { Controller, Get, Req, Post } from '@nestjs/common';
-import { AppService } from './app.service';
+import { BotService } from './bot.service';
 import { Request } from 'express';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly appService: BotService) {}
 
   @Get("/ping")
   ping(): string {

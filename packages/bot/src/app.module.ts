@@ -1,15 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { RedisModule} from 'nestjs-redis'
-
-const options = {
-  url: 'redis://localhost:6379',
-}
+import { BotService } from './bot.service';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
-  imports: [RedisModule.register(options)],
+  imports: [DatabaseModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [BotService],
 })
 export class AppModule { }
