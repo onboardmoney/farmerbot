@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { App } from '@onboardmoney/sdk';
+import { App, TransactionReceipt } from '@onboardmoney/sdk';
 import { ethers } from "ethers";
 
 import addresses from "./contracts/addresses";
@@ -41,35 +41,13 @@ export class CommandService {
     }
   }
 
-  // withdraw full rdai balance to target account
-  // @thegostep todo: permit withdraw of partial balance?
-  // @thegostep todo: implement user gas payments
-  async unroot(user: User, args: any[]): Promise<any> {
-    const [_, target] = args;
-
-    // get provider
-    const provider = ethers.getDefaultProvider(process.env.NETWORK);
-    // init contracts
-    const rdai = new ethers.Contract(
-      addresses[process.env.NETWORK].rDAI,
-      abis.rDAI,
-      provider
-    );
-    // get rdai balance
-    const amt = await rdai.balanceOf(user.address);
-    // assert non-zero balance
-    if (amt.eq(0)) {
-      throw new Error("insufficient rdai balance");
+  // TODO : define return type
+  buildEvent(command: string, receipt: TransactionReceipt): any {
+    const { transactionHash } = receipt
+    return {
+      command, 
+      txHash: transactionHash
     }
-    // prepare txs
-    const txs = [];
-    // redeem and transfer to target balance
-    txs.push(await rdai.populateTransaction.redeemAndTransferAll(target));
-    // @thegostep todo: assert sufficient gas money
-    // submit txs to onboard.money
-    console.log(txs);
-    const txReceipt = await this.onboardmoney.sendBatch({ txs });
-    // @itirabasso todo: notify db of successful command
   }
 
   // send full user dai balance to rdai contract
@@ -126,6 +104,38 @@ export class CommandService {
     console.log(txs);
     const txReceipt = await this.onboardmoney.sendBatch({ txs });
     // @itirabasso todo: notify db of successful command
+    this.db.createEvent(this.buildEvent("plant", txReceipt))
+  }
+
+  // withdraw full rdai balance to target account
+  // @thegostep todo: permit withdraw of partial balance?
+  // @thegostep todo: implement user gas payments
+  async unroot(user: User, args: any[]): Promise<any> {
+    const [_, target] = args;
+
+    // get provider
+    const provider = ethers.getDefaultProvider(process.env.NETWORK);
+    // init contracts
+    const rdai = new ethers.Contract(
+      addresses[process.env.NETWORK].rDAI,
+      abis.rDAI,
+      provider
+    );
+    // get rdai balance
+    const amt = await rdai.balanceOf(user.address);
+    // assert non-zero balance
+    if (amt.eq(0)) {
+      throw new Error("insufficient rdai balance");
+    }
+    // prepare txs
+    const txs = [];
+    // redeem and transfer to target balance
+    txs.push(await rdai.populateTransaction.redeemAndTransferAll(target));
+    // @thegostep todo: assert sufficient gas money
+    // submit txs to onboard.money
+    console.log(txs);
+    const txReceipt = await this.onboardmoney.sendBatch({ txs });
+    this.db.createEvent(this.buildEvent("unroot", txReceipt))
   }
 
   async harvest(user: User, args: any[]): Promise<any> {
