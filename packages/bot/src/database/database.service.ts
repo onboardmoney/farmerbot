@@ -20,7 +20,7 @@ export class DatabaseService implements OnModuleInit {
     return this.redisService.getClient()
   }
 
-  // TODO : define entity
+  // TODO : define return type
   async createUser(userId: string, address: string): Promise<any> {
 
     const user = {
@@ -39,8 +39,10 @@ export class DatabaseService implements OnModuleInit {
     return JSON.parse(user)
   }
 
-  async createEvent(): Promise<any> {
-
+  // TODO : wip
+  async createEvent(event: any): Promise<any> {
+    const key = "events:ids"
+    return this.client.append(key, event)
   }
 
 }
