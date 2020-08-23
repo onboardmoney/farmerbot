@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { App, TransactionReceipt } from '@onboardmoney/sdk';
-import { ethers } from "ethers";
+import { ethers, Contract } from "ethers";
 
 import addresses from "./contracts/addresses";
 import abis from "./contracts/abis";
@@ -17,6 +17,8 @@ const POLINATE_COMMAND = "polinate";
 @Injectable()
 export class CommandService {
   onboardmoney: App;
+  rdai: Contract;
+  dai: Contract;
 
   constructor(private readonly db: DatabaseService) {
     // init onboard.money
@@ -24,6 +26,21 @@ export class CommandService {
       process.env.OM_APIKEY,
       `https://${process.env.NETWORK}.onboard.money`
     );
+    // get provider
+    const provider = ethers.getDefaultProvider(process.env.NETWORK);
+
+    // init contracts
+    this.rdai = new ethers.Contract(
+      addresses[process.env.NETWORK].rDAI,
+      abis.rDAI,
+      provider
+    );
+    this.dai = new ethers.Contract(
+      addresses[process.env.NETWORK].DAI,
+      abis.DAI,
+      provider
+    );
+
   }
 
   async processCommand(user: User, command: string, args: any[]): Promise<void> {
@@ -42,6 +59,7 @@ export class CommandService {
   }
 
   // TODO : define return type
+  // TODO : this should go somewhere else
   buildEvent(command: string, receipt: TransactionReceipt): any {
     const { transactionHash } = receipt
     return {
@@ -53,46 +71,33 @@ export class CommandService {
   // send full user dai balance to rdai contract
   // @thegostep todo: implement user gas payments
   async plant(user: User): Promise<any> {
-    // get provider
-    const provider = ethers.getDefaultProvider(process.env.NETWORK);
-    // init contracts
-    const rdai = new ethers.Contract(
-      addresses[process.env.NETWORK].rDAI,
-      abis.rDAI,
-      provider
-    );
-    const dai = new ethers.Contract(
-      addresses[process.env.NETWORK].DAI,
-      abis.DAI,
-      provider
-    );
     // get dai balance
-    const amt = await dai.balanceOf(user.address);
+    const amt = await this.dai.balanceOf(user.address);
     // assert non-zero balance
     if (amt.eq(0)) {
       throw new Error("insufficient dai balance");
     }
     // get dai approval
-    const approval = await dai.allowance(user.address, rdai.address);
+    const approval = await this.dai.allowance(user.address, this.rdai.address);
     // check if hat exists
-    const hat = await rdai.getHatByAddress(user.address);
+    const hat = await this.rdai.getHatByAddress(user.address);
     // prepare txs
     const txs = [];
     // approve dai transfer
     if (approval.lt(amt)) {
       // push approval tx
-      txs.push(await dai.populateTransaction.approve(rdai.address, amt));
+      txs.push(await this.dai.populateTransaction.approve(this.rdai.address, amt));
     }
     // add dai to hat
     if (hat.hatID) {
       // add dai to existing hat
       txs.push(
-        await rdai.populateTransaction.mintWithSelectedHat(amt, hat.hatID)
+        await this.rdai.populateTransaction.mintWithSelectedHat(amt, hat.hatID)
       );
     } else {
       // add dai to new hat
       txs.push(
-        await rdai.populateTransaction.mintWithNewHat(
+        await this.rdai.populateTransaction.mintWithNewHat(
           amt,
           [user.address, addresses[process.env.NETWORK].trees],
           [50, 50]
@@ -112,17 +117,8 @@ export class CommandService {
   // @thegostep todo: implement user gas payments
   async unroot(user: User, args: any[]): Promise<any> {
     const [_, target] = args;
-
-    // get provider
-    const provider = ethers.getDefaultProvider(process.env.NETWORK);
-    // init contracts
-    const rdai = new ethers.Contract(
-      addresses[process.env.NETWORK].rDAI,
-      abis.rDAI,
-      provider
-    );
     // get rdai balance
-    const amt = await rdai.balanceOf(user.address);
+    const amt = await this.rdai.balanceOf(user.address);
     // assert non-zero balance
     if (amt.eq(0)) {
       throw new Error("insufficient rdai balance");
@@ -130,7 +126,7 @@ export class CommandService {
     // prepare txs
     const txs = [];
     // redeem and transfer to target balance
-    txs.push(await rdai.populateTransaction.redeemAndTransferAll(target));
+    txs.push(await this.rdai.populateTransaction.redeemAndTransferAll(target));
     // @thegostep todo: assert sufficient gas money
     // submit txs to onboard.money
     console.log(txs);
