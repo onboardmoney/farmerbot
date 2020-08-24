@@ -13,7 +13,6 @@ export class AppController {
 
   @Post("/process")
   processMentions(@Req() req: Request): any {
-    const tweets = req.body
-    this.appService.process(tweets)
+    
   }
 }
