@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { GraphQLModule } from '@nestjs/graphql';
 
 import { AppController } from './app.controller';
 import { BotService } from './bot.service';
@@ -9,7 +10,13 @@ import { DatabaseService } from './database/database.service';
 import { SubGraphService } from './subgraph.service';
 
 @Module({
-  imports: [DatabaseModule, ScheduleModule.forRoot()],
+  imports: [
+    DatabaseModule,
+    ScheduleModule.forRoot(),
+    GraphQLModule.forRoot({
+      installSubscriptionHandlers: true
+    }),
+  ],
   controllers: [AppController],
   providers: [BotService, DatabaseService, CommandService, SubGraphService],
 })
