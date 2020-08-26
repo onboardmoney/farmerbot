@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { App, TransactionReceipt } from '@onboardmoney/sdk';
+import { App } from '@onboardmoney/sdk';
 import { ethers, Contract } from "ethers";
 
 import addresses from "./contracts/addresses";
@@ -58,16 +58,6 @@ export class CommandService {
     }
   }
 
-  // TODO : define return type
-  // TODO : this should go somewhere else
-  buildEvent(command: string, receipt: TransactionReceipt): any {
-    const { transactionHash } = receipt
-    return {
-      command, 
-      txHash: transactionHash
-    }
-  }
-
   // send full user dai balance to rdai contract
   // @thegostep todo: implement user gas payments
   async plant(user: User): Promise<any> {
@@ -109,7 +99,7 @@ export class CommandService {
     console.log(txs);
     const txReceipt = await this.onboardmoney.sendBatch({ txs });
     // @itirabasso todo: notify db of successful command
-    this.db.createEvent(this.buildEvent("plant", txReceipt))
+    this.db.createEvent("plant", txReceipt)
   }
 
   // withdraw full rdai balance to target account
@@ -131,7 +121,7 @@ export class CommandService {
     // submit txs to onboard.money
     console.log(txs);
     const txReceipt = await this.onboardmoney.sendBatch({ txs });
-    this.db.createEvent(this.buildEvent("unroot", txReceipt))
+    this.db.createEvent("unroot", txReceipt)
   }
 
   async harvest(user: User, args: any[]): Promise<any> {

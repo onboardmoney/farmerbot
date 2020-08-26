@@ -21,11 +21,15 @@ export class BotService {
       "https://goerli.onboard.money"
     );
     this.axios = Axios.create({
-      baseURL: "https://api.twitter.com/2",
+      baseURL: "https://api.twitter.com",
       headers: {
         "Authorization": "Bearer ".concat(process.env.TWITTER_ACCESS_TOKEN)
       }
     })
+    // this.axios.interceptors.request.use(request => {
+    //   console.log('Starting Request', request)
+    //   return request
+    // })
   }
 
   async processTweet(tweet: Tweet): Promise<void> {
@@ -49,11 +53,10 @@ export class BotService {
   // this function will run every minute at second 30
   @Cron("*/15 * * * * *")
   async process(): Promise<void> {
-    console.log('processing tweets')
     // get parsed tweets from redis
     const tweets = await this.db.getTweets()
+    console.log('tweets to process', tweets.length)
     if (tweets.length === 0) return;
-    console.log(tweets)
     await Promise.all(tweets.map(tweet => this.processTweet(tweet)))
   }
 
@@ -62,23 +65,28 @@ export class BotService {
   async pullTweets() {
     console.log('pulling tweets')
     // pull tweets from twitter
-    const { data } = await this.axios.get('/tweets/search/recent', {
+
+    const lastTweetId = await this.db.getLastTweetId();
+    const { data } = await this.axios.get('/2/tweets/search/recent', {
       params: {
-        query: "@testtest",
-        expansions: "entities.mentions.username,author_id"
-      }
+        query: "@" + this.name,
+        expansions: "entities.mentions.username,author_id",
+        since_id: lastTweetId
+      },
     })
+
     if (data.data === undefined) return;
-    
+
     // parse them
-    const tweets = data.data.map(({ id, text, mentions }) => {
-      const author = mentions.filter(
+    const tweets = data.data.map(({ id, text, author_id, entities }) => {
+      const author = entities.mentions.filter(
         ({ username }) => username === this.name
       )
+      // console.log('mention:', author)
       return {
         id,
         text,
-        author,
+        author: author_id
       }
     })
     console.log('tweets', tweets)

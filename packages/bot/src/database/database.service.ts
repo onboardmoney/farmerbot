@@ -2,8 +2,10 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RedisService } from 'nestjs-redis';
 import { Redis } from 'ioredis';
 import { Tweet } from 'src/types';
+import { TransactionReceipt } from '@onboardmoney/sdk';
 
 const TWEETS_KEY = 'tweets'
+const LAST_TWEET_ID_KEY = 'last_tweet_id'
 
 @Injectable()
 export class DatabaseService implements OnModuleInit {
@@ -42,9 +44,20 @@ export class DatabaseService implements OnModuleInit {
     return JSON.parse(user)
   }
 
+  // TODO : define return type
+  // TODO : this should go somewhere else
+  buildEvent(command: string, receipt: TransactionReceipt): any {
+    const { transactionHash } = receipt
+    return {
+      command,
+      txHash: transactionHash
+    }
+  }
+
   // TODO : wip
-  async createEvent(event: any): Promise<any> {
+  async createEvent(command: string, receipt: TransactionReceipt): Promise<any> {
     const key = "events:ids"
+    const event = this.buildEvent(command, receipt)
     return this.client.append(key, event)
   }
 
@@ -53,10 +66,19 @@ export class DatabaseService implements OnModuleInit {
   }
 
   async addTweets(tweets: Tweet[]): Promise<any> {
+    const ids = tweets.map(t => t.id)
+    const lastId = ids.reduce((prev, current) =>
+      BigInt(current).valueOf() > BigInt(prev).valueOf() ? current : prev
+    )
     // TODO : can this be done is only one command?
     for (const tweet of tweets) {
       await this.client.rpush(TWEETS_KEY, JSON.stringify(tweet))
     }
+    await this.client.set(LAST_TWEET_ID_KEY, lastId)
+  }
+
+  async getLastTweetId(): Promise<string> {
+    return this.client.get(LAST_TWEET_ID_KEY)
   }
 
   async getTweets(): Promise<Tweet[]> {
@@ -65,5 +87,7 @@ export class DatabaseService implements OnModuleInit {
     const tweets = await this.client.lrange(TWEETS_KEY, 0, amount - 1)
     return tweets.map(t => JSON.parse(t))
   }
+
+
 
 }
