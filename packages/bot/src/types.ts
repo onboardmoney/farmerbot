@@ -1,7 +1,7 @@
 export interface Tweet {
   id: string;
   text: string;
-  author_id: string;
+  author: string;
 }
   
 export interface User {
