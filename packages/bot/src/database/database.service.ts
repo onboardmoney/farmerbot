@@ -1,6 +1,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RedisService } from 'nestjs-redis';
 import { Redis } from 'ioredis';
+import { Tweet } from 'src/types';
+
+const TWEETS_KEY = 'tweets'
 
 @Injectable()
 export class DatabaseService implements OnModuleInit {
@@ -9,7 +12,7 @@ export class DatabaseService implements OnModuleInit {
   constructor(private readonly redisService: RedisService) {
   }
   async onModuleInit() {
-      this.client = await this.getClient()
+    this.client = await this.getClient()
   }
 
   private getUserKey(userId: string): string {
@@ -43,6 +46,24 @@ export class DatabaseService implements OnModuleInit {
   async createEvent(event: any): Promise<any> {
     const key = "events:ids"
     return this.client.append(key, event)
+  }
+
+  private async addTweet(tweet: Tweet): Promise<any> {
+    return this.client.rpush(TWEETS_KEY, JSON.stringify(tweet))
+  }
+
+  async addTweets(tweets: Tweet[]): Promise<any> {
+    // TODO : can this be done is only one command?
+    for (const tweet of tweets) {
+      await this.client.rpush(TWEETS_KEY, JSON.stringify(tweet))
+    }
+  }
+
+  async getTweets(): Promise<Tweet[]> {
+    const amount = await this.client.llen(TWEETS_KEY)
+    if (amount === 0) return []
+    const tweets = await this.client.lrange(TWEETS_KEY, 0, amount - 1)
+    return tweets.map(t => JSON.parse(t))
   }
 
 }
