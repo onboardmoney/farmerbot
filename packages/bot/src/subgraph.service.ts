@@ -1,37 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import WebSocket, { OpenEvent } from "ws";
-// import { OpenEvent } from "@types/ws";
 import { DatabaseService } from './database/database.service';
+import axios, { AxiosInstance } from "axios";
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class SubGraphService {
-  ws: WebSocket;
+
+  axiosInstance: AxiosInstance;
+
   constructor(private readonly db: DatabaseService) {
-    this.ws = new WebSocket(
-      "wss://api.thegraph.com/subgraphs/name/itirabasso/farmerbot",
-      { path:"/query" }
-    );
-    console.log('creating ws')
-    this.ws.on('open', (event: OpenEvent) => {
-        console.log('open', event)
-      }
+    const url = "https://api.thegraph.com"
+    this.axiosInstance = axios.create({
+      baseURL: url
+    });
+  }
+
+  @Cron("*/15 * * * * *")
+  async getTransfers() {
+    const query = {
+      "query": "{tokens(first: 5) { id decimals name symbol } transfers(first: 5) { id from to value }}"
+    }
+    console.log('pulling transfers')
+    const ret = await this.axiosInstance.post(
+      '/subgraphs/name/itirabasso/farmerbot',
+      query
     )
-    this.ws.on('upgrade', (req: any) => {
-      console.log('upgrade', req)
-    })
-    this.ws.on('close', (code: number, reason: string) => {
-      console.log('close', code, reason)
-    })
-    this.ws.on('error', (err: any) => {
-      console.log('error', err)
-    })
-    // this.ws.on('message', (msg) => {
-    //   console.log('msg', msg)
-    //   console.log('aaaaaaaa')
-    //   const query = {
-    //     "query": "{tokens(first: 5) { id decimals name symbol } transfers(first: 5) { id from to value }}"
-    //   }
-    //   this.ws.send(query)
-    // })
+    // console.log('response:', ret)
   }
 }
