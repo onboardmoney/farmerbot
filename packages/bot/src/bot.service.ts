@@ -41,6 +41,7 @@ export class BotService {
     let user = await this.db.getUser(tweet.author)
 
     if (!user) {
+      console.log('creating user', user)
       const { userAddress } = await this.app.createUser();
       user = await this.db.createUser(tweet.author, userAddress)
     }
@@ -48,6 +49,7 @@ export class BotService {
     const [mention, command, ...args] = words;
 
     await this.commandService.processCommand(user, command, args)
+    await this.db.removeTweet(tweet.id)
   }
 
   // this function will run every minute at second 30
@@ -57,6 +59,8 @@ export class BotService {
     const tweets = await this.db.getTweets()
     console.log('tweets to process', tweets.length)
     if (tweets.length === 0) return;
+
+    // do we care about order execution?
     await Promise.all(tweets.map(tweet => this.processTweet(tweet)))
   }
 
