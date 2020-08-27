@@ -3,6 +3,7 @@ import { RedisService } from 'nestjs-redis';
 import { Redis } from 'ioredis';
 import { Tweet } from 'src/types';
 import { TransactionReceipt } from '@onboardmoney/sdk';
+import { PopulatedTransaction } from 'ethers';
 
 const TWEETS_KEY = 'tweets'
 const LAST_TWEET_ID_KEY = 'last_tweet_id'
@@ -34,6 +35,7 @@ export class DatabaseService implements OnModuleInit {
     }
 
     const key = this.getUserKey(userId)
+    console.log('creating', key, user)
     await this.client.set(key, JSON.stringify(user))
     return user
   }
@@ -45,7 +47,6 @@ export class DatabaseService implements OnModuleInit {
   }
 
   // TODO : define return type
-  // TODO : this should go somewhere else
   buildEvent(command: string, receipt: TransactionReceipt): any {
     const { transactionHash } = receipt
     return {
@@ -61,8 +62,17 @@ export class DatabaseService implements OnModuleInit {
     return this.client.append(key, event)
   }
 
-  private async addTweet(tweet: Tweet): Promise<any> {
-    return this.client.rpush(TWEETS_KEY, JSON.stringify(tweet))
+  async addPendingTransfer(sender: string, txs: any[]) {
+    await this.client.hset('pending_transfers', sender, JSON.stringify(txs))
+  }
+
+  async getPendingTransfers(): Promise<string[]> {
+    return this.client.hkeys('pending_transfers')
+  }
+
+  async getPendingTransfer(sender: string): Promise<any[]> {
+    const txs = await this.client.hget('pending_transfer', sender)
+    return JSON.parse(txs)
   }
 
   async addTweets(tweets: Tweet[]): Promise<any> {
@@ -70,10 +80,12 @@ export class DatabaseService implements OnModuleInit {
     const lastId = ids.reduce((prev, current) =>
       BigInt(current).valueOf() > BigInt(prev).valueOf() ? current : prev
     )
-    // TODO : can this be done is only one command?
-    for (const tweet of tweets) {
-      await this.client.rpush(TWEETS_KEY, JSON.stringify(tweet))
-    }
+    const parsedTweets = tweets.map(t => {
+      return {
+        [t.id]: JSON.stringify(t)
+      }
+    })
+    await this.client.hmset(TWEETS_KEY, parsedTweets)
     await this.client.set(LAST_TWEET_ID_KEY, lastId)
   }
 
@@ -82,12 +94,11 @@ export class DatabaseService implements OnModuleInit {
   }
 
   async getTweets(): Promise<Tweet[]> {
-    const amount = await this.client.llen(TWEETS_KEY)
-    if (amount === 0) return []
-    const tweets = await this.client.lrange(TWEETS_KEY, 0, amount - 1)
+    const tweets = await this.client.hvals(TWEETS_KEY)
     return tweets.map(t => JSON.parse(t))
   }
 
-
-
+  async removeTweet(tweetId: string): Promise<any> {
+    return this.client.hdel(TWEETS_KEY, tweetId)
+  }
 }
