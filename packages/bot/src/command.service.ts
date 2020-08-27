@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { App } from '@onboardmoney/sdk';
-import { ethers, Contract } from "ethers";
+import { ethers, Contract, PopulatedTransaction } from "ethers";
 
 import addresses from "./contracts/addresses";
 import abis from "./contracts/abis";
@@ -72,7 +72,8 @@ export class CommandService {
     // check if hat exists
     const hat = await this.rdai.getHatByAddress(user.address);
     // prepare txs
-    const txs = [];
+    // FIXME : OM's TxBatchDto.txs it's incompatible with ethers' PopulateTransaction
+    const txs: any[] = [];
     // approve dai transfer
     if (approval.lt(amt)) {
       // push approval tx
@@ -96,10 +97,17 @@ export class CommandService {
     }
     // @thegostep todo: assert sufficient gas money
     // submit txs to onboard.money
-    console.log(txs);
-    const txReceipt = await this.onboardmoney.sendBatch({ txs });
+    // console.log(txs);
+    // const txReceipt = await this.onboardmoney.sendBatch({ txs });
     // @itirabasso todo: notify db of successful command
-    this.db.createEvent("plant", txReceipt)
+    // this.db.createEvent("plant", txReceipt)
+    await this.db.addPendingTransfer(user.address, txs)
+  }
+
+  async doPlant(from: string) {
+    console.log('executing actual planting')
+    const txs = await this.db.getPendingTransfer(from)
+    await this.onboardmoney.sendBatch({ txs })
   }
 
   // withdraw full rdai balance to target account
@@ -126,15 +134,15 @@ export class CommandService {
 
   async harvest(user: User, args: any[]): Promise<any> {
     const [word, target] = args;
-    
+
   }
 
-  async polinate(user: User): Promise<any> {}
+  async polinate(user: User): Promise<any> { }
 
   async give(user: User, args: any[]): Promise<any> {
     const [amount, _, __, target] = args;
   }
-  
-  
+
+
 
 }
