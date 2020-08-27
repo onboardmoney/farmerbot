@@ -12,10 +12,7 @@ import { SubGraphService } from './subgraph.service';
 @Module({
   imports: [
     DatabaseModule,
-    ScheduleModule.forRoot(),
-    GraphQLModule.forRoot({
-      installSubscriptionHandlers: true
-    }),
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [BotService, DatabaseService, CommandService, SubGraphService],
