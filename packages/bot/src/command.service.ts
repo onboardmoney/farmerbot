@@ -10,9 +10,7 @@ import { DatabaseService } from './database/database.service';
 
 const PLANT_COMMAND = "plant";
 const UNROOT_COMMAND = "unroot";
-const HARVEST_COMMAND = "harvest";
 const GIVE_COMMAND = "give";
-const POLINATE_COMMAND = "polinate";
 
 @Injectable()
 export class CommandService {
@@ -47,10 +45,6 @@ export class CommandService {
     switch (command) {
       case PLANT_COMMAND:
         return this.plant(user)
-      case HARVEST_COMMAND:
-        return this.harvest(user, args)
-      case POLINATE_COMMAND:
-        return this.polinate(user)
       case UNROOT_COMMAND:
         return this.unroot(user, args)
       case GIVE_COMMAND:
@@ -132,17 +126,8 @@ export class CommandService {
     this.db.createEvent("unroot", txReceipt)
   }
 
-  async harvest(user: User, args: any[]): Promise<any> {
-    const [word, target] = args;
-
-  }
-
-  async polinate(user: User): Promise<any> { }
-
   async give(user: User, args: any[]): Promise<any> {
     const [amount, _, __, target] = args;
   }
-
-
 
 }
