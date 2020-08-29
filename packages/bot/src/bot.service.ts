@@ -15,10 +15,10 @@ export class BotService {
 
   constructor(private readonly db: DatabaseService,
     private readonly commandService: CommandService) {
-    this.name = "farmerbot"
+    this.name = "testtest"
     this.app = new App(
       process.env.APPLICATION_API_KEY,
-      "https://goerli.onboard.money"
+      `https://${process.env.NETWORK}.onboard.money`
     );
     this.axios = Axios.create({
       baseURL: "https://api.twitter.com",
@@ -43,6 +43,7 @@ export class BotService {
     if (!user) {
       console.log('creating user', user)
       const { userAddress } = await this.app.createUser();
+      console.log('got addr', userAddress)
       user = await this.db.createUser(tweet.author, userAddress)
     }
     console.log('User', user)
