@@ -49,6 +49,8 @@ export class CommandService {
         return this.unroot(user, args)
       case GIVE_COMMAND:
         return this.give(user, args)
+      default:
+        console.log('unable unknown command', command, args, user)
     }
   }
 
