@@ -24,6 +24,7 @@ export class CommandService {
       process.env.OM_APIKEY,
       `https://${process.env.NETWORK}.onboard.money`
     );
+
     // get provider
     const provider = ethers.getDefaultProvider(process.env.NETWORK);
 
@@ -50,23 +51,38 @@ export class CommandService {
       case GIVE_COMMAND:
         return this.give(user, args)
       default:
-        console.log('unable unknown command', command, args, user)
+        console.log('unknown command')
+        // console.log('unknown command', command, args, user)
     }
   }
 
   // send full user dai balance to rdai contract
   // @thegostep todo: implement user gas payments
   async plant(user: User): Promise<any> {
+    // @thegostep todo: assert sufficient gas money
+    // submit txs to onboard.money
+    // console.log(txs);
+    // const txReceipt = await this.onboardmoney.sendBatch({ txs });
+    // @itirabasso todo: notify db of successful command
+    // this.db.createEvent("plant", txReceipt)
+    console.log(user.userId, user.address, " plants")
+    await this.db.addPendingTransfer(user.address, [])
+  }
+
+  async doPlant(from: string) {
+    console.log(from, " transfered tokens")
+
     // get dai balance
-    const amt = await this.dai.balanceOf(user.address);
+    const amt = await this.dai.balanceOf(from);
     // assert non-zero balance
     if (amt.eq(0)) {
       throw new Error("insufficient dai balance");
     }
+
     // get dai approval
-    const approval = await this.dai.allowance(user.address, this.rdai.address);
+    const approval = await this.dai.allowance(from, this.rdai.address);
     // check if hat exists
-    const hat = await this.rdai.getHatByAddress(user.address);
+    const hat = await this.rdai.getHatByAddress(from);
     // prepare txs
     // FIXME : OM's TxBatchDto.txs it's incompatible with ethers' PopulateTransaction
     const txs: any[] = [];
@@ -75,6 +91,7 @@ export class CommandService {
       // push approval tx
       txs.push(await this.dai.populateTransaction.approve(this.rdai.address, amt));
     }
+    
     // add dai to hat
     if (hat.hatID) {
       // add dai to existing hat
@@ -86,23 +103,14 @@ export class CommandService {
       txs.push(
         await this.rdai.populateTransaction.mintWithNewHat(
           amt,
-          [user.address, addresses[process.env.NETWORK].trees],
+          [from, addresses[process.env.NETWORK].trees],
           [50, 50]
         )
       );
     }
-    // @thegostep todo: assert sufficient gas money
-    // submit txs to onboard.money
-    // console.log(txs);
-    // const txReceipt = await this.onboardmoney.sendBatch({ txs });
-    // @itirabasso todo: notify db of successful command
-    // this.db.createEvent("plant", txReceipt)
-    await this.db.addPendingTransfer(user.address, txs)
-  }
 
-  async doPlant(from: string) {
-    console.log('executing actual planting')
-    const txs = await this.db.getPendingTransfer(from)
+    // const txs = await this.db.getPendingTransfer(from)
+    console.log('txs.length', txs.length)
     await this.onboardmoney.sendBatch({ txs })
   }
 
