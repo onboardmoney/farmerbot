@@ -15,9 +15,9 @@ export class BotService {
 
   constructor(private readonly db: DatabaseService,
     private readonly commandService: CommandService) {
-    this.name = "testtest"
+    this.name = process.env.BOT_NAME ? process.env.BOT_NAME : "testtestx"
     this.app = new App(
-      process.env.APPLICATION_API_KEY,
+      process.env.OM_API_KEY,
       `https://${process.env.NETWORK}.onboard.money`
     );
     this.axios = Axios.create({
@@ -37,20 +37,19 @@ export class BotService {
     // words[0] should be the @ mention
     // words[1] command
     // words[2:] args
-    console.log(words)
+    // console.log(words)
     let user = await this.db.getUser(tweet.author)
 
     if (!user) {
-      console.log('creating user', user)
+      // console.log('creating user')
       const { userAddress } = await this.app.createUser();
-      console.log('got addr', userAddress)
+      console.log('user created', userAddress)
       user = await this.db.createUser(tweet.author, userAddress)
     }
     console.log('User', user)
     const [mention, command, ...args] = words;
 
     await this.commandService.processCommand(user, command, args)
-    await this.db.removeTweet(tweet.id)
   }
 
   // this function will run every minute at second 30
@@ -62,23 +61,31 @@ export class BotService {
     if (tweets.length === 0) return;
 
     // do we care about order execution?
-    await Promise.all(tweets.map(tweet => this.processTweet(tweet)))
+    // await Promise.all(tweets.map(tweet => this.processTweet(tweet)))
+    for (const tweet of tweets) {
+      await this.processTweet(tweet)
+      await this.db.removeTweet(tweet.id)
+    }
   }
 
   // this function will run every minute at second 0
   @Cron("*/15 * * * * *")
   async pullTweets() {
-    console.log('pulling tweets')
-    // pull tweets from twitter
-
     const lastTweetId = await this.db.getLastTweetId();
-    const { data } = await this.axios.get('/2/tweets/search/recent', {
-      params: {
-        query: "@" + this.name,
-        expansions: "entities.mentions.username,author_id",
-        since_id: lastTweetId
-      },
-    })
+    
+    console.log('Fetching tweets since tweet', lastTweetId)
+ 
+    // craft api call params
+    const params = {
+      query: "@" + this.name,
+      expansions: "entities.mentions.username,author_id",
+    }
+    if (lastTweetId !== null) {
+      params['since_id'] = lastTweetId
+    }
+    
+    // pull tweets from twitter
+    const { data } = await this.axios.get('/2/tweets/search/recent', { params })
 
     if (data.data === undefined) return;
 
@@ -94,7 +101,7 @@ export class BotService {
         author: author_id
       }
     })
-    console.log('tweets', tweets)
+    console.log('parsed tweets:', tweets.length)
 
     // store them in redis
     this.db.addTweets(tweets)
