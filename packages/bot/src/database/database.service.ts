@@ -35,7 +35,7 @@ export class DatabaseService implements OnModuleInit {
     }
 
     const key = this.getUserKey(userId)
-    console.log('creating', key, user)
+    // console.log('storing user', key, user)
     await this.client.set(key, JSON.stringify(user))
     return user
   }
@@ -63,29 +63,41 @@ export class DatabaseService implements OnModuleInit {
   }
 
   async addPendingTransfer(sender: string, txs: any[]) {
-    await this.client.hset('pending_transfers', sender, JSON.stringify(txs))
+    // await this.client.hset('pending_transfers', sender, JSON.stringify(txs))
+    return this.client.sadd('pending_transfers', sender)
   }
 
   async getPendingTransfers(): Promise<string[]> {
-    return this.client.hkeys('pending_transfers')
+    // return this.client.hkeys('pending_transfers')
+    return this.client.smembers('pending_transfers')
   }
 
-  async getPendingTransfer(sender: string): Promise<any[]> {
-    const txs = await this.client.hget('pending_transfer', sender)
-    return JSON.parse(txs)
+  async removePendingTransfer(sender: string): Promise<any> {
+    return this.client.srem('pending_transfers', sender)
   }
+
+  // async getPendingTransfer(sender: string): Promise<any[]> {
+  //   const txs = await this.client.hget('pending_transfers', sender)
+  //   return JSON.parse(txs)
+  // }
 
   async addTweets(tweets: Tweet[]): Promise<any> {
     const ids = tweets.map(t => t.id)
     const lastId = ids.reduce((prev, current) =>
       BigInt(current).valueOf() > BigInt(prev).valueOf() ? current : prev
     )
-    const parsedTweets = tweets.map(t => {
-      return {
-        [t.id]: JSON.stringify(t)
-      }
-    })
-    await this.client.hmset(TWEETS_KEY, parsedTweets)
+    // const parsedTweets = tweets.map(t => {
+    //   return {
+    //     [t.id]: JSON.stringify(t)
+    //   }
+    // })
+    // await this.client.hmset(TWEETS_KEY, parsedTweets)
+    // console.log('parsed tweets', parsedTweets)
+    await Promise.all(tweets.map(t => {
+      this.client.hset(TWEETS_KEY, t.id, JSON.stringify(t))
+    }))
+    console.log('tweets stored')
+
     await this.client.set(LAST_TWEET_ID_KEY, lastId)
   }
 

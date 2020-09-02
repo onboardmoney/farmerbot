@@ -23,7 +23,7 @@ export class SubGraphService {
   async getTransfers() {
     const query = {
       "query": `{
-        transfers(where: { to: "0x6B175474E89094C44Da98b954EedeAC495271d0F" } ) {
+        transfers {
           id
           from
           to
@@ -33,16 +33,20 @@ export class SubGraphService {
     }
     console.log('pulling transfers')
     const ret = await this.axiosInstance.post(
-      '/subgraphs/name/itirabasso/farmerbot',
+      '/subgraphs/name/itirabasso/kovangraph',
       query
     )
     const { data } = ret;
     if (data === undefined) return;
-    console.log(data)
-    // const { transfers } = data;
-    // for (const transfer of transfers) {
-    //   await this.cmdService.doPlant(transfer.from)
-    // }
-    // console.log('response:', data)
+    const { transfers } = data.data;
+    console.log(transfers)
+    const pending = await this.db.getPendingTransfers()
+    console.log(pending)
+    for (const transfer of transfers) {
+      if (pending.includes(transfer.to)) {
+        console.log('transfer from', transfer)
+        await this.cmdService.doPlant(transfer.to)
+      }
+    }
   }
 }
