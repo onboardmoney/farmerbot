@@ -10,7 +10,7 @@ import { DatabaseService } from './database/database.service';
 import { CommandService } from './command.service';
 
 @Injectable()
-export class BotService implements OnModuleInit {
+export class BotService {
   app: App;
   axios: AxiosInstance;
   name: string
@@ -43,32 +43,6 @@ export class BotService implements OnModuleInit {
     // timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
     // strictSSL:            true,     // optional - requires SSL certificates to be valid.
     // })
-  }
-
-  async onModuleInit() {
-  //   const oauth = new OAuth(
-  //     'https://api.twitter.com/oauth/request_token',
-  //     'https://api.twitter.com/oauth/access_token',
-  //     this.apiKey,
-  //     this.apiKeySecret,
-  //     '1.0',
-  //     null,
-  //     'HMAC-SHA1'
-  //   );
-  //   oauth.getOAuthRequestToken(async (err, token, secret, results) => {
-
-  //     console.log(err, token, secret, results)
-  //     const params = {
-  //       oauth_token: token
-  //     }
-  //     const headers = {}
-  //     const resp = await this.axios.get("https://api.twitter.com/oauth/authorize", { params, headers })
-  //     console.log(resp)
-  //     // oauth.getOAuthAccessToken(token, secret, verifier, (accessToken, accessTokenSecret) => {
-
-  //     //   this.setCredentials(accessToken, accessTokenSecret)
-  //     // })
-  //   })
   }
 
   async setCredentials(token: string, tokenSecret: string) {
@@ -140,31 +114,6 @@ export class BotService implements OnModuleInit {
     return data.data
   }
 
-  // API key:KOwO5eNm2wKM59Izw68MlOssS
-  // API key secret:mMHbWxXUZqrMgcFBjFiRBgX8jQLB15bAJbUynV67LIAouaUpBD
-  // Access token:27136072-1D32Cq6h82rLy0lAudQvtwbbNOTSZwOfsARxwyuCI
-  // Access token secret:t8GzWDoedLQrrKLSIriDT2ZHvMKxsvJLbpoXRxaeFA1Jm
-  private async getAuthHeader(): Promise<string> {
-    const nonce = Math.random().toString(36).substring(42)
-    const timestamp = Date.now()
-    const apiKey = "KOwO5eNm2wKM59Izw68MlOssS"
-    const token = "27136072-1D32Cq6h82rLy0lAudQvtwbbNOTSZwOfsARxwyuCI"
-    const values = {
-      "oauth_consumer_key": apiKey,
-      "oauth_nonce": nonce,
-      "oauth_signature": "tnnArxj06cWHq44gCs1OSKk%2FjLY%3D",
-      "oauth_timestamp": timestamp.toString(),
-      "oauth_token": token,
-      "oauth_signature_method": "HMAC-SHA1",
-      "oauth_version": "1.0"
-    }
-
-    let parsedValues = Object.entries(values).map((key, value) => {
-      return `${key}="${value}"`
-    }).join(', ')
-    return "OAuth" + parsedValues;
-  }
-
   private async sendDM(recepient: string, message: string): Promise<any> {
     const params = {
       "event": {
@@ -179,24 +128,6 @@ export class BotService implements OnModuleInit {
         }
       }
     }
-    // 'Authorization': await this.getAuthHeader()
-    const headers = {
-      'Content-Type': "application/json",
-
-    }
-    console.log('sending dm')
-    // const pPost = promisify()
-    // const response = await new Promise((resolve, reject) => {
-    //   this.twit.post(
-    //     'direct_messages/events/new',
-    //     params,
-    //     (resp, err) => {
-    //       if (err) reject(err)
-    //       resolve(resp)
-    //     }
-    //   )
-    // })
-    // const response = await this.axios.post('/1.1/direct_messages/events/new.json', { params, headers })
     this.twit.post(
       'direct_messages/events/new',
       params,
