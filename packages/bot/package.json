@@ -38,10 +38,13 @@
     "graphql": "^15.3.0",
     "graphql-tools": "^6.0.18",
     "nestjs-redis": "^1.2.8",
+    "oauth": "^0.9.15",
+    "querystring": "^0.2.0",
     "redis": "^3.0.2",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^6.5.4",
+    "twit": "^2.2.11",
     "uniswap-v2-helper": "^0.3.1"
   },
   "devDependencies": {

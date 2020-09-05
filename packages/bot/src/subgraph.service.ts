@@ -39,7 +39,7 @@ export class SubGraphService {
     const { data } = ret;
     if (data === undefined) return;
     const { transfers } = data.data;
-    console.log(transfers)
+    // console.log(transfers)
     const pending = await this.db.getPendingTransfers()
     console.log(pending)
     for (const transfer of transfers) {
