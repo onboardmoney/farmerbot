@@ -82,6 +82,7 @@ export class DatabaseService implements OnModuleInit {
   // }
 
   async addTweets(tweets: Tweet[]): Promise<any> {
+    if (tweets === undefined || tweets.length === 0) return;
     const ids = tweets.map(t => t.id)
     const lastId = ids.reduce((prev, current) =>
       BigInt(current).valueOf() > BigInt(prev).valueOf() ? current : prev
