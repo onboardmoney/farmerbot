@@ -15,11 +15,6 @@ export class BotService {
   axios: AxiosInstance;
   name: string
   twit: Twitter
-  apiKey: string;
-  apiKeySecret: string;
-  accessToken: string;
-  accessTokenSecret: string;
-  callbackUrl: string;
 
   constructor(private readonly db: DatabaseService,
     private readonly commandService: CommandService) {
@@ -34,22 +29,16 @@ export class BotService {
         "Authorization": "Bearer ".concat(process.env.TWITTER_ACCESS_TOKEN)
       }
     })
-    this.apiKey = "KOwO5eNm2wKM59Izw68MlOssS"
-    this.apiKeySecret = "mMHbWxXUZqrMgcFBjFiRBgX8jQLB15bAJbUynV67LIAouaUpBD"
-    this.accessToken = ""
-    this.accessTokenSecret = ""
-    this.callbackUrl = "https://d3154ff541b7.ngrok.io/callback"
     // this.twit = Twitter({
     // timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
     // strictSSL:            true,     // optional - requires SSL certificates to be valid.
     // })
   }
 
-  async setCredentials(token: string, tokenSecret: string) {
-    console.log('setting credentials')
+  setCredentials(token: string, tokenSecret: string) {
     this.twit = Twitter({
-      consumer_key: this.apiKey,
-      consumer_secret: this.apiKeySecret,
+      consumer_key: process.env.TWITTER_API_KEY,
+      consumer_secret: process.env.TWITTER_API_KEY_SECRET,
       access_token: token,
       access_token_secret: tokenSecret
     })

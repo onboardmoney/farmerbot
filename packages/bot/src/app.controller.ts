@@ -10,8 +10,6 @@ import { OAuth } from "oauth"
 @Controller()
 export class AppController {
   axios: AxiosInstance;
-  apiKey: string;
-  apiKeySecret: string;
   accessToken: string;
   accessTokenSecret: string;
   callbackUrl: string;
@@ -21,16 +19,12 @@ export class AppController {
     this.axios = Axios.create({
       baseURL: "https://api.twitter.com",
     })
-    this.apiKey = "KOwO5eNm2wKM59Izw68MlOssS"
-    this.apiKeySecret = "mMHbWxXUZqrMgcFBjFiRBgX8jQLB15bAJbUynV67LIAouaUpBD"
-    this.accessToken = ""
-    this.accessTokenSecret = ""
     this.callbackUrl = "https://d3154ff541b7.ngrok.io/callback"
     this.oauth = new OAuth(
       'https://api.twitter.com/oauth/request_token',
       'https://api.twitter.com/oauth/access_token',
-      this.apiKey,
-      this.apiKeySecret,
+      process.env.TWITTER_API_KEY,
+      process.env.TWITTER_API_KEY_SECRET,
       '1.0A',
       this.callbackUrl,
       'HMAC-SHA1'
