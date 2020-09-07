@@ -1,21 +1,22 @@
 specVersion: 0.0.2
-description: Subgraph that indexes the blockchain data
-repository: https://github.com/sablierhq/sablier-subgraph
+description: Subgraph that looks for data for the farmerbot
+repository: https://github.com/onboardmoney/farmerbot
 schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum/contract
-    name: CeaErc20
-    network: mainnet
+    name: DAI
+    network: kovan
     source:
-      abi: erc20
-      address: "0xc1C0472c0C80bCcDC7F5D01A376Bd97a734B8815"
+      abi: dai
+      address: "0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa"
+      startBlock: 20747334
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.3
+      apiVersion: 0.0.4
       abis:
-        - name: erc20
-          file: ../contracts/src/abis/erc20.json
+        - name: dai
+          file: ../bot/src/contracts/abis/DAI.json
       entities:
         - Token
         - Transfer
