@@ -38,8 +38,6 @@ export class AppController {
 
   @Get('/auth')
   async auth(@Req() req: Request, @Res() res: Response) {
-    const params = {}
-
     this.oauth.getOAuthRequestToken(async (err, token, secret, results) => {
       this.accessToken = token
       this.accessTokenSecret = secret
