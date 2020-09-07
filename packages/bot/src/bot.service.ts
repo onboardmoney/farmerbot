@@ -156,7 +156,7 @@ export class BotService {
       'statuses/update',
       params,
       (err, resp) => {
-        console.log('reply', err, resp)
+        // console.log('reply', err, resp)
       }
     )
   }

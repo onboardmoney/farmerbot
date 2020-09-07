@@ -78,16 +78,16 @@ export class CommandService {
     const rdai = this.rdai.connect(signer)
 
     // get dai balance
-    const amt = await dai.balanceOf(from);
+    const amt = await this.dai.balanceOf(from);
     // assert non-zero balance
     if (amt.eq(0)) {
       throw new Error("insufficient dai balance");
     }
 
     // get dai approval
-    const approval = await dai.allowance(from, this.rdai.address);
+    const approval = await this.dai.allowance(from, this.rdai.address);
     // check if hat exists
-    const hat = await rdai.getHatByAddress(from);
+    const hat = await this.rdai.getHatByAddress(from);
     // prepare txs
     // FIXME : OM's TxBatchDto.txs it's incompatible with ethers' PopulateTransaction
     const txs: any[] = [];
