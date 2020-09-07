@@ -52,7 +52,6 @@ export class CommandService {
         return this.give(user, args)
       default:
         console.log('unknown command')
-      // console.log('unknown command', command, args, user)
     }
   }
 
@@ -116,7 +115,12 @@ export class CommandService {
 
     const batch = { txs }
     console.log('batch', batch)
-    await this.onboardmoney.sendBatch(batch)
+    try {
+      const receipt = await this.onboardmoney.sendBatch(batch)
+      await this.db.removePendingTransfer(from)
+    } catch (e) {
+      console.log('error sending batch', e)
+    }
   }
 
   // withdraw full rdai balance to target account
