@@ -39,12 +39,12 @@ export class SubGraphService {
     const { data } = ret;
     if (data === undefined) return;
     const { transfers } = data.data;
-    // console.log(transfers)
-    const pending = await this.db.getPendingTransfers()
-    console.log(pending)
+
+    const pending = (await this.db.getPendingTransfers()).map(s => s.toUpperCase())
+
     for (const transfer of transfers) {
-      if (pending.includes(transfer.to)) {
-        console.log('transfer from', transfer)
+      if (pending.includes(transfer.to.toUpperCase())) {
+        console.log('got transfer from', transfer)
         await this.cmdService.doPlant(transfer.to)
       }
     }
