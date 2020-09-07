@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { App } from '@onboardmoney/sdk';
-import { ethers, Contract, PopulatedTransaction } from "ethers";
+import { App, TxRequestDto } from '@onboardmoney/sdk';
+import { ethers, Contract, PopulatedTransaction, VoidSigner } from "ethers";
 
 import addresses from "./contracts/addresses";
 import abis from "./contracts/abis";
@@ -21,7 +21,7 @@ export class CommandService {
   constructor(private readonly db: DatabaseService) {
     // init onboard.money
     this.onboardmoney = new App(
-      process.env.OM_APIKEY,
+      process.env.OM_API_KEY,
       `https://${process.env.NETWORK}.onboard.money`
     );
 
@@ -52,7 +52,7 @@ export class CommandService {
         return this.give(user, args)
       default:
         console.log('unknown command')
-        // console.log('unknown command', command, args, user)
+      // console.log('unknown command', command, args, user)
     }
   }
 
@@ -72,36 +72,41 @@ export class CommandService {
   async doPlant(from: string) {
     console.log(from, " transfered tokens")
 
+    // let populated txs include from param
+    const signer = new VoidSigner(from)
+    const dai = this.dai.connect(signer)
+    const rdai = this.rdai.connect(signer)
+
     // get dai balance
-    const amt = await this.dai.balanceOf(from);
+    const amt = await dai.balanceOf(from);
     // assert non-zero balance
     if (amt.eq(0)) {
       throw new Error("insufficient dai balance");
     }
 
     // get dai approval
-    const approval = await this.dai.allowance(from, this.rdai.address);
+    const approval = await dai.allowance(from, this.rdai.address);
     // check if hat exists
-    const hat = await this.rdai.getHatByAddress(from);
+    const hat = await rdai.getHatByAddress(from);
     // prepare txs
     // FIXME : OM's TxBatchDto.txs it's incompatible with ethers' PopulateTransaction
     const txs: any[] = [];
     // approve dai transfer
     if (approval.lt(amt)) {
       // push approval tx
-      txs.push(await this.dai.populateTransaction.approve(this.rdai.address, amt));
+      txs.push(await dai.populateTransaction.approve(this.rdai.address, amt));
     }
-    
+
     // add dai to hat
     if (hat.hatID) {
       // add dai to existing hat
       txs.push(
-        await this.rdai.populateTransaction.mintWithSelectedHat(amt, hat.hatID)
+        await rdai.populateTransaction.mintWithSelectedHat(amt, hat.hatID)
       );
     } else {
       // add dai to new hat
       txs.push(
-        await this.rdai.populateTransaction.mintWithNewHat(
+        await rdai.populateTransaction.mintWithNewHat(
           amt,
           [from, addresses[process.env.NETWORK].trees],
           [50, 50]
@@ -109,9 +114,9 @@ export class CommandService {
       );
     }
 
-    // const txs = await this.db.getPendingTransfer(from)
-    console.log('txs.length', txs.length)
-    await this.onboardmoney.sendBatch({ txs })
+    const batch = { txs }
+    console.log('batch', batch)
+    await this.onboardmoney.sendBatch(batch)
   }
 
   // withdraw full rdai balance to target account
