@@ -3,7 +3,6 @@ import { App } from '@onboardmoney/sdk';
 import { Cron } from '@nestjs/schedule';
 import Axios, { AxiosInstance } from "axios";
 import Twitter from "twit";
-import { OAuth } from "oauth"
 
 import { Tweet } from './types';
 import { DatabaseService } from './database/database.service';
@@ -23,19 +22,26 @@ export class BotService {
       process.env.OM_API_KEY,
       `https://${process.env.NETWORK}.onboard.money`
     );
+
     this.axios = Axios.create({
       baseURL: "https://api.twitter.com",
       headers: {
         "Authorization": "Bearer ".concat(process.env.TWITTER_ACCESS_TOKEN)
       }
     })
-    // this.twit = Twitter({
-    // timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
-    // strictSSL:            true,     // optional - requires SSL certificates to be valid.
-    // })
+    if (process.env.BOT_ACCESS_TOKEN && process.env.BOT_ACCESS_TOKEN_SECRET) {
+      this.twit = Twitter({
+        consumer_key: process.env.TWITTER_API_KEY,
+        consumer_secret: process.env.TWITTER_API_KEY_SECRET,
+        access_token: process.env.BOT_ACCESS_TOKEN,
+        access_token_secret: process.env.BOT_ACCESS_TOKEN_SECRET
+      })
+
+    }
   }
 
   setCredentials(token: string, tokenSecret: string) {
+    console.log('credentials', token, tokenSecret)
     this.twit = Twitter({
       consumer_key: process.env.TWITTER_API_KEY,
       consumer_secret: process.env.TWITTER_API_KEY_SECRET,
@@ -52,12 +58,12 @@ export class BotService {
     let user = await this.db.getUser(tweet.author)
 
     if (!user) {
-      // console.log('creating user')
       const { userAddress } = await this.app.createUser();
       console.log('user created', userAddress)
       user = await this.db.createUser(tweet.author, userAddress)
-      const message = "send your dai to " + userAddress
-      await this.sendDM(tweet.author, message)
+      const message = "@" + tweet.author_name + " send your dai to " + userAddress
+      // await this.sendDM(tweet.author, message)
+      await this.reply(tweet, message)
     }
     console.log('User', user)
     const [mention, command, ...args] = words;
@@ -73,8 +79,6 @@ export class BotService {
     console.log('tweets to process', tweets.length)
     if (tweets.length === 0) return;
 
-    // do we care about order execution?
-    // await Promise.all(tweets.map(tweet => this.processTweet(tweet)))
     for (const tweet of tweets) {
       await this.processTweet(tweet)
       await this.db.removeTweet(tweet.id)
@@ -98,9 +102,25 @@ export class BotService {
     // pull tweets from twitter
     const { data } = await this.axios.get('/2/tweets/search/recent', { params })
 
-    console.log('getTweets', data)
-    if (data.data === undefined) return [];
-    return data.data
+    const tweets = data.data
+    console.log('getTweets', tweets)
+    if (tweets === undefined) return [];
+
+    // get users from every included user entity
+    const users = data.includes.users.reduce((obj, item) => {
+      return {
+        ...obj,
+        [item.id]: item.username
+      }
+    }, {})
+
+    // set the tweet's author's name 
+    return tweets.map((t) => {
+      if (users[t.author_id] !== undefined) {
+        t.author_name = users[t.author_id]
+      }
+      return t
+    })
   }
 
   private async sendDM(recepient: string, message: string): Promise<any> {
@@ -126,6 +146,20 @@ export class BotService {
     )
   }
 
+  private async reply(tweet: Tweet, message: string): Promise<any> {
+    const params = {
+      status: message,
+      in_reply_to_status_id: tweet.id,
+
+    }
+    this.twit.post(
+      'statuses/update',
+      params,
+      (err, resp) => {
+        console.log('reply', err, resp)
+      }
+    )
+  }
   // this function will run every minute at second 0
   @Cron("*/15 * * * * *")
   async pullTweets() {
@@ -133,18 +167,15 @@ export class BotService {
     const tweets = await this.getTweets();
 
     // parse them
-    const parsedTweets = tweets.map(({ id, text, author_id, entities }) => {
-      const author = entities.mentions.filter(
-        ({ username }) => username === this.name
-      )
-      // console.log('mention:', author)
+    const parsedTweets = tweets.map(({ id, text, author_id, author_name, entities }) => {
       return {
         id,
         text,
-        author: author_id
+        author_name,
+        author: author_id,
       }
     })
-    console.log('parsed tweets:', parsedTweets.length)
+    console.log('parsed tweets:', parsedTweets)
 
     // store them in redis
     await this.db.addTweets(parsedTweets)
