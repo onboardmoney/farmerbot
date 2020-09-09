@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { App } from '@onboardmoney/sdk';
 import { Cron } from '@nestjs/schedule';
 import Axios, { AxiosInstance } from "axios";
@@ -17,7 +17,6 @@ export class BotService {
 
   constructor(private readonly db: DatabaseService,
     private readonly commandService: CommandService) {
-    this.name = process.env.BOT_NAME ? process.env.BOT_NAME : "testtestxx"
     this.app = new App(
       process.env.OM_API_KEY,
       `https://${process.env.NETWORK}.onboard.money`
@@ -51,32 +50,34 @@ export class BotService {
   }
   async processTweet(tweet: Tweet): Promise<void> {
     const words = tweet.text.split(' ')
-    // words[0] should be the @ mention
-    // words[1] command
-    // words[2:] args
-    // console.log(words)
+
+    // This only supports tweets like "@botname command arg1 arg2 ..."
+    // And DO NOT support tweets like  "(n words) @botname command args"
+    const [mention, command, ...args] = words;
+
     let user = await this.db.getUser(tweet.author)
 
     if (!user) {
       const { userAddress } = await this.app.createUser();
       console.log('user created', userAddress)
+      Logger.debug(`wallet created for ${tweet.author}: ${userAddress}`)
       user = await this.db.createUser(tweet.author, userAddress)
-      const message = "@" + tweet.author_name + " send your dai to " + userAddress
+      const message = `@${tweet.author_name} send your dai to ${userAddress}`
       // await this.sendDM(tweet.author, message)
-      await this.reply(tweet, message)
+      // await this.reply(tweet, message)
     }
-    console.log('User', user)
-    const [mention, command, ...args] = words;
 
+    // process the command
     await this.commandService.processCommand(user, command, args)
   }
 
-  // this function will run every minute at second 30
+  // TODO : make this configurable
   @Cron("*/15 * * * * *")
   async process(): Promise<void> {
     // get parsed tweets from redis
     const tweets = await this.db.getTweets()
-    console.log('tweets to process', tweets.length)
+    Logger.debug(`tweets to process: ${tweets.length}`)
+    
     if (tweets.length === 0) return;
 
     for (const tweet of tweets) {
@@ -85,26 +86,28 @@ export class BotService {
     }
   }
 
-  private async getTweets(): Promise<any[]> {
+  private async getTweets(): Promise<Tweet[]> {
     const lastTweetId = await this.db.getLastTweetId();
 
-    console.log('Fetching tweets since tweet', lastTweetId)
+    // console.log('Fetching tweets since tweet', lastTweetId)
+    Logger.debug(`Fetching tweets since tweet: ${lastTweetId}`)
 
     // craft api call params
     const params = {
       query: "@" + this.name,
       expansions: "entities.mentions.username,author_id",
     }
+
     if (lastTweetId !== null) {
       params['since_id'] = lastTweetId
     }
 
-    // pull tweets from twitter
+    // pull tweets which mention the bot
     const { data } = await this.axios.get('/2/tweets/search/recent', { params })
 
     const tweets = data.data
-    console.log('getTweets', tweets)
     if (tweets === undefined) return [];
+    Logger.debug(`Got ${tweets.length} tweets`)
 
     // get users from every included user entity
     const users = data.includes.users.reduce((obj, item) => {
@@ -141,7 +144,7 @@ export class BotService {
       'direct_messages/events/new',
       params,
       (resp, err) => {
-        console.log(resp, err)
+        if (err) Logger.error(err)
       }
     )
   }
@@ -156,14 +159,16 @@ export class BotService {
       'statuses/update',
       params,
       (err, resp) => {
-        // console.log('reply', err, resp)
+        if (err) Logger.error(err)
       }
     )
   }
-  // this function will run every minute at second 0
+  
+  // TODO : make this configurable
   @Cron("*/15 * * * * *")
   async pullTweets() {
 
+    // get tweets
     const tweets = await this.getTweets();
 
     // parse them
@@ -175,7 +180,8 @@ export class BotService {
         author: author_id,
       }
     })
-    console.log('parsed tweets:', parsedTweets)
+
+    Logger.debug(`Parsed tweets: ${parsedTweets.length}`)
 
     // store them in redis
     await this.db.addTweets(parsedTweets)

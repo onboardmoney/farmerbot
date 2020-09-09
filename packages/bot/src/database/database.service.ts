@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { RedisService } from 'nestjs-redis';
 import { Redis } from 'ioredis';
 import { Tweet } from 'src/types';
@@ -36,7 +36,7 @@ export class DatabaseService implements OnModuleInit {
     }
 
     const key = this.getUserKey(userId)
-    // console.log('storing user', key, user)
+    Logger.debug(`storing user ${key} ${user}`)
     await this.client.set(key, JSON.stringify(user))
     return user
   }
@@ -64,6 +64,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   async addPendingTransfer(sender: string, txs: any[]) {
+    Logger.debug(`Adding pending tranfer from: ${sender}`)
     return this.client.sadd('pending_transfers', sender)
   }
 
@@ -71,13 +72,17 @@ export class DatabaseService implements OnModuleInit {
     return this.client.smembers('pending_transfers')
   }
 
-  async removePendingTransfer(sender: string): Promise<any> {
-    return this.client.srem('pending_transfers', sender)
+  async removePendingTransfer(sender: string): Promise<boolean> {
+    Logger.debug(`Removing pending transfer from ${sender}`)
+    const removed = await this.client.srem('pending_transfers', sender)
+    return removed > 0;
   }
 
-  async addTweets(tweets: Tweet[]): Promise<any> {
+  async addTweets(tweets: Tweet[]): Promise<void> {
     if (tweets === undefined || tweets.length === 0) return;
     const ids = tweets.map(t => t.id)
+    // get lastest id from tweets
+    // TODO : can i get this from the api's response?
     const lastId = ids.reduce((prev, current) =>
       BigInt(current).valueOf() > BigInt(prev).valueOf() ? current : prev
     )
@@ -85,8 +90,8 @@ export class DatabaseService implements OnModuleInit {
     await Promise.all(tweets.map(t => {
       this.client.hset(TWEETS_KEY, t.id, JSON.stringify(t))
     }))
-    console.log('tweets stored')
-
+    Logger.debug(`Tweets stored: ${tweets.length}`)
+    Logger.debug(`Last tweet: ${lastId}`)
     await this.client.set(LAST_TWEET_ID_KEY, lastId)
   }
 
@@ -100,6 +105,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   async removeTweet(tweetId: string): Promise<any> {
+    Logger.debug(`Deleting tweet ${tweetId}`)
     return this.client.hdel(TWEETS_KEY, tweetId)
   }
 }
