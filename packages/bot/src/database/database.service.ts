@@ -3,8 +3,8 @@ import { RedisService } from 'nestjs-redis';
 import { Redis } from 'ioredis';
 import { Tweet } from 'src/types';
 import { TransactionReceipt } from '@onboardmoney/sdk';
-import { PopulatedTransaction } from 'ethers';
 
+const USER_KEY_PREFIX = 'user:'
 const TWEETS_KEY = 'tweets'
 const LAST_TWEET_ID_KEY = 'last_tweet_id'
 
@@ -15,11 +15,12 @@ export class DatabaseService implements OnModuleInit {
   constructor(private readonly redisService: RedisService) {
   }
   async onModuleInit() {
+    // TODO : is this really necessary? do we gain anything by storing the redis client?
     this.client = await this.getClient()
   }
 
   private getUserKey(userId: string): string {
-    return 'user:' + userId
+    return USER_KEY_PREFIX + userId
   }
 
   async getClient() {
