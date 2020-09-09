@@ -5,7 +5,10 @@ import { Transport } from "@nestjs/microservices";
 require('dotenv').config()
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn'],
+  });
+  // TODO : remove this!
   app.connectMicroservice({
     transport: Transport.REDIS,
     options: {
