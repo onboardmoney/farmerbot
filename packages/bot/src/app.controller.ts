@@ -1,24 +1,16 @@
 import { Controller, Get, Req, Res, Post } from '@nestjs/common';
 import { BotService } from './bot.service';
-import { Request, response, Response } from 'express';
-import Axios, { AxiosInstance } from "axios";
-import { createHmac, randomBytes } from 'crypto';
-import { stringify } from 'querystring';
-import { Method } from 'axios';
+import { Request, Response } from 'express';
 import { OAuth } from "oauth"
 
 @Controller()
 export class AppController {
-  axios: AxiosInstance;
   accessToken: string;
   accessTokenSecret: string;
   callbackUrl: string;
   oauth: OAuth;
 
   constructor(private readonly botService: BotService) {
-    this.axios = Axios.create({
-      baseURL: "https://api.twitter.com",
-    })
     this.callbackUrl = "https://d3154ff541b7.ngrok.io/callback"
     this.oauth = new OAuth(
       'https://api.twitter.com/oauth/request_token',
