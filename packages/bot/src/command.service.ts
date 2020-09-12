@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { App, TxRequestDto } from '@onboardmoney/sdk';
 import { ethers, Contract, PopulatedTransaction, VoidSigner } from "ethers";
 
@@ -58,18 +58,13 @@ export class CommandService {
   // send full user dai balance to rdai contract
   // @thegostep todo: implement user gas payments
   async plant(user: User): Promise<any> {
-    // @thegostep todo: assert sufficient gas money
-    // submit txs to onboard.money
-    // console.log(txs);
-    // const txReceipt = await this.onboardmoney.sendBatch({ txs });
-    // @itirabasso todo: notify db of successful command
-    // this.db.createEvent("plant", txReceipt)
     console.log(user.userId, user.address, " plants")
     await this.db.addPendingTransfer(user.address, [])
   }
 
   async doPlant(from: string) {
-    console.log(from, " transfered tokens")
+    Logger.debug(`${from} transfered tokens`)
+    // @thegostep todo: assert sufficient gas money
 
     // let populated txs include from param
     const signer = new VoidSigner(from)
@@ -114,10 +109,14 @@ export class CommandService {
     }
 
     const batch = { txs }
-    console.log('batch', batch)
+    Logger.debug(`sending batch => ${batch}`)
+
     try {
+      // submit txs to onboard.money
       const receipt = await this.onboardmoney.sendBatch(batch)
+      // remove pending transfer
       await this.db.removePendingTransfer(from)
+      // @itirabasso todo: notify db of successful command
     } catch (e) {
       console.log('error sending batch', e)
     }
