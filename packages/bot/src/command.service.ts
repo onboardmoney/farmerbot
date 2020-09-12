@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { App, TxRequestDto } from '@onboardmoney/sdk';
 import { ethers, Contract, PopulatedTransaction, VoidSigner } from "ethers";
 
@@ -14,16 +14,11 @@ const GIVE_COMMAND = "give";
 
 @Injectable()
 export class CommandService {
-  onboardmoney: App;
   rdai: Contract;
   dai: Contract;
 
-  constructor(private readonly db: DatabaseService) {
-    // init onboard.money
-    this.onboardmoney = new App(
-      process.env.OM_API_KEY,
-      `https://${process.env.NETWORK}.onboard.money`
-    );
+  constructor(private readonly db: DatabaseService,
+    @Inject("ONBOARD_MONEY") private readonly onboardmoney: App) {
 
     // get provider
     const provider = ethers.getDefaultProvider(process.env.NETWORK);
@@ -51,7 +46,7 @@ export class CommandService {
       case GIVE_COMMAND:
         return this.give(user, args)
       default:
-        console.log('unknown command')
+        Logger.debug(`Unknown command ${command} ${args}`)
     }
   }
 

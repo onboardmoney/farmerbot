@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
 import { App } from '@onboardmoney/sdk';
 import { Cron } from '@nestjs/schedule';
 import Axios, { AxiosInstance } from "axios";
@@ -10,18 +10,15 @@ import { CommandService } from './command.service';
 
 @Injectable()
 export class BotService {
-  app: App;
   axios: AxiosInstance;
   name: string
   twit: Twitter
 
   constructor(private readonly db: DatabaseService,
-    private readonly commandService: CommandService) {
-    this.app = new App(
-      process.env.OM_API_KEY,
-      `https://${process.env.NETWORK}.onboard.money`
-    );
-
+    private readonly commandService: CommandService,
+    @Inject("ONBOARD_MONEY") private readonly onboardmoney: App) {
+      
+    this.name = process.env.BOT_NAME
     this.axios = Axios.create({
       baseURL: "https://api.twitter.com",
       headers: {
@@ -58,7 +55,7 @@ export class BotService {
     let user = await this.db.getUser(tweet.author)
 
     if (!user) {
-      const { userAddress } = await this.app.createUser();
+      const { userAddress } = await this.onboardmoney.createUser();
       console.log('user created', userAddress)
       Logger.debug(`wallet created for ${tweet.author}: ${userAddress}`)
       user = await this.db.createUser(tweet.author, userAddress)
@@ -86,7 +83,7 @@ export class BotService {
     }
   }
 
-  private async getTweets(): Promise<Tweet[]> {
+  private async getTweets(): Promise<any[]> {
     const lastTweetId = await this.db.getLastTweetId();
 
     // console.log('Fetching tweets since tweet', lastTweetId)
