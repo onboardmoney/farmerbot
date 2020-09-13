@@ -4,7 +4,7 @@ import { DatabaseService } from './database.service';
 
 @Module({
   imports: [RedisModule.register({
-    url: 'redis://localhost:6379',
+    url: 'redis://farmerbot.redis:6379',
   })],
   providers: [DatabaseService],
 })
