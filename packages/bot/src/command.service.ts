@@ -53,12 +53,11 @@ export class CommandService {
   // send full user dai balance to rdai contract
   // @thegostep todo: implement user gas payments
   async plant(user: User): Promise<any> {
-    console.log(user.userId, user.address, " plants")
+    // console.log(user.userId, user.address, " plants")
     await this.db.addPendingTransfer(user.address, [])
   }
 
   async doPlant(from: string) {
-    Logger.debug(`${from} transfered tokens`)
     // @thegostep todo: assert sufficient gas money
 
     // let populated txs include from param
@@ -104,8 +103,7 @@ export class CommandService {
     }
 
     const batch = { txs }
-    Logger.debug(`sending batch => ${batch}`)
-
+    Logger.debug(`sending batch => ${JSON.stringify(batch)}`)
     try {
       // submit txs to onboard.money
       const receipt = await this.onboardmoney.sendBatch(batch)
@@ -113,7 +111,9 @@ export class CommandService {
       await this.db.removePendingTransfer(from)
       // @itirabasso todo: notify db of successful command
     } catch (e) {
-      console.log('error sending batch', e)
+      const err = e.toJSON()
+      Logger.error(`${err.message}`)
+      Logger.debug(`${JSON.stringify(err)}`)
     }
   }
 

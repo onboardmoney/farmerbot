@@ -3,6 +3,7 @@ import { DatabaseService } from './database/database.service';
 import axios, { AxiosInstance } from "axios";
 import { Cron } from '@nestjs/schedule';
 import { CommandService } from './command.service';
+import { formatUnits } from '@ethersproject/units';
 
 @Injectable()
 export class SubGraphService {
@@ -47,6 +48,7 @@ export class SubGraphService {
     for (const transfer of transfers) {
       if (pending.includes(transfer.to.toUpperCase())) {
         console.log('got transfer from', transfer)
+        Logger.debug(`${transfer.to} deposited ${formatUnits(transfer.value)} DAI`)
         await this.cmdService.doPlant(transfer.to)
       }
     }

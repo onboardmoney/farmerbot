@@ -17,7 +17,7 @@ export class BotService {
   constructor(private readonly db: DatabaseService,
     private readonly commandService: CommandService,
     @Inject("ONBOARD_MONEY") private readonly onboardmoney: App) {
-      
+
     this.name = process.env.BOT_NAME
     this.axios = Axios.create({
       baseURL: "https://api.twitter.com",
@@ -61,7 +61,7 @@ export class BotService {
       user = await this.db.createUser(tweet.author, userAddress)
       const message = `@${tweet.author_name} send your dai to ${userAddress}`
       // await this.sendDM(tweet.author, message)
-      // await this.reply(tweet, message)
+      await this.reply(tweet, message)
     }
 
     // process the command
