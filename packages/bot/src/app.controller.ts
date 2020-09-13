@@ -1,7 +1,6 @@
-import { Controller, Get, Req, Res, Post } from '@nestjs/common';
+import { Controller, Get, Req, Res } from '@nestjs/common';
 import { BotService } from './bot.service';
 import { Request, Response } from 'express';
-import { OAuth } from "oauth"
 import { AuthService } from './auth.service';
 
 @Controller()
@@ -25,7 +24,8 @@ export class AppController {
   @Get("/callback")
   async callback(@Req() req: Request): Promise<any> {
     const { oauth_token, oauth_verifier } = req.query
-    const credentials = await this.authService.getAccessToken(oauth_token, oauth_verifier)
-    return credentials
+    const [token, secret] = await this.authService.getAccessToken(oauth_token, oauth_verifier)
+    this.botService.setCredentials(token, secret)
+    return [token, secret]
   }
 }

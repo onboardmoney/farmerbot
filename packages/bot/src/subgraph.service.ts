@@ -20,7 +20,7 @@ export class SubGraphService {
     });
   }
 
-  @Cron("*/15 * * * * *")
+  @Cron("45 * * * * *")
   async getTransfers() {
     const query = {
       "query": `{
@@ -47,7 +47,6 @@ export class SubGraphService {
 
     for (const transfer of transfers) {
       if (pending.includes(transfer.to.toUpperCase())) {
-        console.log('got transfer from', transfer)
         Logger.debug(`${transfer.to} deposited ${formatUnits(transfer.value)} DAI`)
         await this.cmdService.doPlant(transfer.to)
       }

@@ -32,14 +32,12 @@ export class BotService {
         access_token: process.env.BOT_ACCESS_TOKEN,
         access_token_secret: process.env.BOT_ACCESS_TOKEN_SECRET
       })
-
     }
   }
 
   // TODO : make this configurable
-  @Cron("*/15 * * * * *")
+  @Cron("0 * * * * *")
   async pullTweets() {
-
     // get tweets
     const tweets = await this.getTweets();
 
@@ -60,7 +58,7 @@ export class BotService {
   }
 
   // TODO : make this configurable
-  @Cron("*/15 * * * * *")
+  @Cron("15 * * * * *")
   async process(): Promise<void> {
 
     if (!this.hasCredentials()) {
@@ -71,7 +69,7 @@ export class BotService {
     // get parsed tweets from redis
     const tweets = await this.db.getTweets()
     Logger.debug(`tweets to process: ${tweets.length}`)
-    
+
     if (tweets.length === 0) return;
 
     for (const tweet of tweets) {
@@ -145,6 +143,7 @@ export class BotService {
   hasCredentials() {
     const token = process.env.BOT_ACCESS_TOKEN
     const secret = process.env.BOT_ACCESS_TOKEN_SECRET
+    console.log('credentials', token, secret)
     return token != undefined && token.length > 0 && secret != undefined && secret.length > 0
   }
 
@@ -163,7 +162,7 @@ export class BotService {
     const params = {
       status: message,
       in_reply_to_status_id: tweet.id,
-      
+
     }
     this.twit.post(
       'statuses/update',
@@ -171,29 +170,29 @@ export class BotService {
       (err, resp) => {
         if (err) Logger.error(err)
       }
-      )
-    }
+    )
+  }
 
-    private async sendDM(recepient: string, message: string): Promise<any> {
-      const params = {
-        "event": {
-          "type": "message_create",
-          "message_create": {
-            "target": {
-              "recipient_id": recepient
-            },
-            "message_data": {
-              "text": message
-            }
+  private async sendDM(recepient: string, message: string): Promise<any> {
+    const params = {
+      "event": {
+        "type": "message_create",
+        "message_create": {
+          "target": {
+            "recipient_id": recepient
+          },
+          "message_data": {
+            "text": message
           }
         }
       }
-      this.twit.post(
-        'direct_messages/events/new',
-        params,
-        (resp, err) => {
-          if (err) Logger.error(err)
-        }
-      )
     }
+    this.twit.post(
+      'direct_messages/events/new',
+      params,
+      (resp, err) => {
+        if (err) Logger.error(err)
+      }
+    )
   }
+}

@@ -36,7 +36,7 @@ export class DatabaseService implements OnModuleInit {
     }
 
     const key = this.getUserKey(userId)
-    Logger.debug(`storing user ${key} ${user}`)
+    // Logger.debug(`storing user ${key} ${user}`)
     await this.client.set(key, JSON.stringify(user))
     return user
   }
