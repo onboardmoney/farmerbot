@@ -143,13 +143,18 @@ export class BotService {
   hasCredentials() {
     const token = process.env.BOT_ACCESS_TOKEN
     const secret = process.env.BOT_ACCESS_TOKEN_SECRET
-    console.log('credentials', token, secret)
     return token != undefined && token.length > 0 && secret != undefined && secret.length > 0
   }
 
   setCredentials(token: string, tokenSecret: string) {
     // FIXME : this message should not be here
     Logger.debug(`Setting new credentials ${token}:${tokenSecret}`)
+
+    // ugly
+    process.env.BOT_ACCESS_TOKEN = token
+    process.env.BOT_ACCESS_TOKEN_SECRET = tokenSecret
+
+    // create twitter instance with fresh access token
     this.twit = Twitter({
       consumer_key: process.env.TWITTER_API_KEY,
       consumer_secret: process.env.TWITTER_API_KEY_SECRET,

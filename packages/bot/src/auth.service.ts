@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OAuth } from "oauth"
 
 @Injectable()
@@ -18,12 +18,12 @@ export class AuthService {
       process.env.TWITTER_AUTH_CALLBACK,
       'HMAC-SHA1'
     );
-
-
+    this.requestSecrets = {}
   }
 
   async getRequestToken(): Promise<string> {
     return new Promise((resolve, reject) => {
+      Logger.debug(`Getting request token => ${process.env.TWITTER_AUTH_CALLBACK}`)
       this.oauth.getOAuthRequestToken(async (err, token, secret, results) => {
         // TODO : check the content of results
         if (err) reject(err)
