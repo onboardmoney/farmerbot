@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  farmerbot.bot:
+    build:
+      context: .
+      target: development
+    volumes:
+      - /usr/src/app/dist
+      - /usr/src/app/node_modules
+      - .:/usr/src/app
+    ports:
+      - ${PORT}:${PORT}
+    command: yarn bot start:dev
+    env_file:
+      - .env
+    networks:
+      - farmerbot.network
+    depends_on:
+      - farmerbot.redis
+
+  farmerbot.redis:
+    image: redis:5
+    networks:
+      - farmerbot.network
+    volumes:
+      - farmerbot.data:/data
+
+
+networks:
+  farmerbot.network:
+volumes:
+  farmerbot.data:
