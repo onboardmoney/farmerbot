@@ -9,6 +9,7 @@
   ],
   "private": true,  
   "scripts": {
+    "clean": "rimraf */node_modules */dist && rimraf ./node_modules ./dist",
     "subgraph": "yarn workspace @farmerbot/subgraph",
     "react-app": "yarn workspace @farmerbot/react-app",
     "bot": "yarn workspace @farmerbot/bot"
