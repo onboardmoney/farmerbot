@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { AppController } from './app.controller';
+import { AuthService } from './auth.service';
 import { BotService } from './bot.service';
 import { DatabaseModule } from './database/database.module';
 import { CommandService } from './command.service';
@@ -17,7 +18,7 @@ require('dotenv').config()
     ScheduleModule.forRoot()
   ],
   controllers: [AppController],
-  providers: [BotService, DatabaseService, CommandService, SubGraphService, {
+  providers: [AuthService, BotService, DatabaseService, CommandService, SubGraphService, {
     provide: 'ONBOARD_MONEY',
     useValue: new App(process.env.OM_API_KEY, `https://${process.env.NETWORK}.onboard.money`)
   }],
