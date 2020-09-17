@@ -26,6 +26,9 @@ export class AppController {
     const { oauth_token, oauth_verifier } = req.query
     const [token, secret] = await this.authService.getAccessToken(oauth_token, oauth_verifier)
     this.botService.setCredentials(token, secret)
-    return [token, secret]
+    return `
+      BOT_ACCESS_TOKEN=${token}<br />
+      BOT_ACCESS_TOKEN_SECRET=${secret}<br />
+    `;
   }
 }
