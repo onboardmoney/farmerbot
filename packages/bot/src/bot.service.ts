@@ -22,7 +22,7 @@ export class BotService {
     this.axios = Axios.create({
       baseURL: "https://api.twitter.com",
       headers: {
-        "Authorization": "Bearer ".concat(process.env.TWITTER_ACCESS_TOKEN)
+        "Authorization": "Bearer ".concat(process.env.TWITTER_V2_BEARER_TOKEN)
       }
     })
     if (this.hasCredentials()) {
@@ -147,9 +147,6 @@ export class BotService {
   }
 
   setCredentials(token: string, tokenSecret: string) {
-    // FIXME : this message should not be here
-    Logger.debug(`Setting new credentials ${token}:${tokenSecret}`)
-
     // ugly
     process.env.BOT_ACCESS_TOKEN = token
     process.env.BOT_ACCESS_TOKEN_SECRET = tokenSecret

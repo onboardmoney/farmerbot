@@ -136,7 +136,6 @@ export class CommandService {
     // submit txs to onboard.money
     console.log(txs);
     const txReceipt = await this.onboardmoney.sendBatch({ txs });
-    this.db.createEvent("unroot", txReceipt)
   }
 
   async give(user: User, args: any[]): Promise<any> {
