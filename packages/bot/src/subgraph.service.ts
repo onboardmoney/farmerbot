@@ -23,7 +23,7 @@ export class SubGraphService {
   @Cron("45 * * * * *")
   async getTransfers() {
     const query = {
-      "query": `{
+      query: `{
         transfers {
           id
           from
@@ -35,7 +35,7 @@ export class SubGraphService {
 
     Logger.debug(`Pulling transfers`)
     const ret = await this.axiosInstance.post(
-      '/subgraphs/name/itirabasso/kovangraph',
+      `/subgraphs/name/${process.env.SUBGRAPH_NAME}`,
       query
     )
     const { data } = ret;
