@@ -1,10 +1,10 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { RedisService } from 'nestjs-redis';
 import { Redis } from 'ioredis';
-import { Tweet } from 'src/types';
+import { Tweet, User } from 'src/types';
 import { TransactionReceipt } from '@onboardmoney/sdk';
 
-const USER_KEY_PREFIX = 'user:'
+const USER_KEY = userId => `user:${userId}`
 const TWEETS_KEY = 'tweets'
 const LAST_TWEET_ID_KEY = 'last_tweet_id'
 
@@ -19,48 +19,23 @@ export class DatabaseService implements OnModuleInit {
     this.client = await this.getClient()
   }
 
-  private getUserKey(userId: string): string {
-    return USER_KEY_PREFIX + userId
-  }
-
   async getClient() {
     return this.redisService.getClient()
   }
 
-  // TODO : define return type
-  async createUser(userId: string, address: string): Promise<any> {
-
+  async createUser(userId: string, address: string): Promise<User> {
     const user = {
       userId,
       address
     }
 
-    const key = this.getUserKey(userId)
-    // Logger.debug(`storing user ${key} ${user}`)
-    await this.client.set(key, JSON.stringify(user))
+    await this.client.set(USER_KEY(userId), JSON.stringify(user))
     return user
   }
 
   async getUser(userId: string): Promise<any> {
-    const key = this.getUserKey(userId)
-    const user = await this.client.get(key);
+    const user = await this.client.get(USER_KEY(userId));
     return JSON.parse(user)
-  }
-
-  // TODO : define return type
-  buildEvent(command: string, receipt: TransactionReceipt): any {
-    const { transactionHash } = receipt
-    return {
-      command,
-      txHash: transactionHash
-    }
-  }
-
-  // TODO : wip
-  async createEvent(command: string, receipt: TransactionReceipt): Promise<any> {
-    const key = "events:ids"
-    const event = this.buildEvent(command, receipt)
-    return this.client.append(key, event)
   }
 
   async addPendingTransfer(sender: string, txs: any[]) {
