@@ -1,6 +1,5 @@
 import { Transfer } from "../types/schema";
-import { Transfer as TransferEvent } from "../types/CeaErc20/erc20";
-import { addToken } from "./tokens";
+import { Transfer as TransferEvent } from "../types/DAI/dai";
 
 export function handleTransfer(event: TransferEvent): void {
   let transactionHash = event.transaction.hash.toHex();
@@ -9,5 +8,4 @@ export function handleTransfer(event: TransferEvent): void {
   transfer.to = event.params.dst.toHexString()
   transfer.value = event.params.wad
   transfer.save();
-  // addToken(event.transaction.to.toHex());
 }
