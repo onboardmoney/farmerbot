@@ -1,10 +1,10 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { App, TxRequestDto } from '@onboardmoney/sdk';
-import { ethers, Contract, PopulatedTransaction, VoidSigner } from "ethers";
+import { App } from '@onboardmoney/sdk';
+import { ethers, Contract, VoidSigner } from "ethers";
 
 import addresses from "./contracts/addresses";
 import abis from "./contracts/abis";
-import { User, Tweet } from './types';
+import { User } from './types';
 
 import { DatabaseService } from './database/database.service';
 

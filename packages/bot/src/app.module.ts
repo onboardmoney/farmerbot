@@ -8,9 +8,8 @@ import { DatabaseModule } from './database/database.module';
 import { CommandService } from './command.service';
 import { DatabaseService } from './database/database.service';
 import { SubGraphService } from './subgraph.service';
-import { App } from '@onboardmoney/sdk';
 
-require('dotenv').config()
+import { App } from '@onboardmoney/sdk';
 
 @Module({
   imports: [
