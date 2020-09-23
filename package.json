@@ -14,9 +14,16 @@
     "react-app": "yarn workspace @farmerbot/react-app",
     "bot": "yarn workspace @farmerbot/bot"
   },
-  "workspaces": [
-    "packages/bot",
-    "packages/react-app",
-    "packages/subgraph"
-  ]
+  "workspaces": {
+    "packages": [
+      "packages/bot",
+      "packages/react-app",
+      "packages/subgraph"
+    ],
+    "nohoist": [
+      "**/@graphprotocol/graph-ts",
+      "**/@graphprotocol/graph-ts/**"
+    ]
+
+  }
 }
