@@ -24,7 +24,7 @@ export class SubGraphService {
   async getTransfers() {
     const query = {
       query: `{
-        transfers {
+        transfers(orderBy:timestamp orderDirection:desc) {
           id
           from
           to
