@@ -8,5 +8,7 @@ export function handleTransfer(event: TransferEvent): void {
   transfer.to = event.params.dst.toHexString()
   transfer.value = event.params.wad
   transfer.timestamp = event.block.timestamp
+  transfer.gasUsed = event.transaction.gasUsed
+  transfer.gasPrice = event.transaction.gasPrice
   transfer.save();
 }
