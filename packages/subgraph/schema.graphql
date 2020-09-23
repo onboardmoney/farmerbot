@@ -10,4 +10,5 @@ type Transfer @entity {
   from: String!
   to: String!
   value: BigInt!
+  timestamp: BigInt
 }

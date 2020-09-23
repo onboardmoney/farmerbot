@@ -7,5 +7,6 @@ export function handleTransfer(event: TransferEvent): void {
   transfer.from = event.params.src.toHexString()
   transfer.to = event.params.dst.toHexString()
   transfer.value = event.params.wad
+  transfer.timestamp = event.block.timestamp
   transfer.save();
 }
