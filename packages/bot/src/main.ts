@@ -1,10 +1,11 @@
+require('dotenv').config()
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { readFileSync } from 'fs';
 
 declare const module: any
 
-require('dotenv').config()
 
 async function bootstrap() {
  
@@ -18,7 +19,7 @@ async function bootstrap() {
     },
     logger: ['error', 'warn', 'debug'],
   });
-  await app.listen(3000);
+  await app.listen(process.env.PORT);
 
   if (module.hot) {
     module.hot.accept()

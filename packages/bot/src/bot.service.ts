@@ -93,7 +93,7 @@ export class BotService {
       params['since_id'] = lastTweetId
     }
 
-    // pull tweets which mention the bot
+    // search for tweets mentioning the bot
     const { data } = await this.axios.get('/2/tweets/search/recent', { params })
 
     const tweets = data.data
