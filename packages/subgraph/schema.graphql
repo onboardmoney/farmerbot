@@ -10,7 +10,4 @@ type Transfer @entity {
   from: String!
   to: String!
   value: BigInt!
-  gasUsed: BigInt
-  gasPrice: BigInt
-  timestamp: BigInt
 }

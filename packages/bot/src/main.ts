@@ -1,29 +1,17 @@
-require('dotenv').config()
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { readFileSync } from 'fs';
+import { Transport } from "@nestjs/microservices";
 
-declare const module: any
-
+require('dotenv').config()
 
 async function bootstrap() {
- 
-  const keyFile = readFileSync(process.env.PRIVATE_KEY_SSL_FILEPATH || 'ssl/localhost.key.pem')
-  const certFile = readFileSync(process.env.CERTIFICATE_SSL_FILEPATH || 'ssl/localhost.crt.pem')
-
-  const app = await NestFactory.create(AppModule, {
-    httpsOptions: {
-      key: keyFile,
-      cert: certFile,
-    },
-    logger: ['error', 'warn', 'debug'],
-  });
-  await app.listen(process.env.PORT);
-
-  if (module.hot) {
-    module.hot.accept()
-    module.hot.dispose(() => app.close())
-  }
+  const app = await NestFactory.create(AppModule);
+  app.connectMicroservice({
+    transport: Transport.REDIS,
+    options: {
+      url: 'redis://localhost:6379',
+    }
+  })
+  await app.listen(3000);
 }
 bootstrap();

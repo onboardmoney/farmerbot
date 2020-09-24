@@ -1,9 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DatabaseService } from './database/database.service';
 import axios, { AxiosInstance } from "axios";
 import { Cron } from '@nestjs/schedule';
 import { CommandService } from './command.service';
-import { formatUnits } from '@ethersproject/units';
 
 @Injectable()
 export class SubGraphService {
@@ -20,11 +19,11 @@ export class SubGraphService {
     });
   }
 
-  @Cron("45 * * * * *")
+  @Cron("*/15 * * * * *")
   async getTransfers() {
     const query = {
-      query: `{
-        transfers(orderBy:timestamp orderDirection:desc) {
+      "query": `{
+        transfers {
           id
           from
           to
@@ -32,22 +31,20 @@ export class SubGraphService {
         }
       }`
     }
-
-    Logger.debug(`Pulling transfers`)
+    console.log('pulling transfers')
     const ret = await this.axiosInstance.post(
-      `/subgraphs/name/${process.env.SUBGRAPH_NAME}`,
+      '/subgraphs/name/itirabasso/kovangraph',
       query
     )
     const { data } = ret;
     if (data === undefined) return;
     const { transfers } = data.data;
 
-    // map all addresses to upper case
     const pending = (await this.db.getPendingTransfers()).map(s => s.toUpperCase())
 
     for (const transfer of transfers) {
       if (pending.includes(transfer.to.toUpperCase())) {
-        Logger.debug(`${transfer.to} deposited ${formatUnits(transfer.value)} DAI`)
+        console.log('got transfer from', transfer)
         await this.cmdService.doPlant(transfer.to)
       }
     }

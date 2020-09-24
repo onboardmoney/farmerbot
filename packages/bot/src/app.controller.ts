@@ -1,13 +1,34 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
+import { Controller, Get, Req, Res, Post } from '@nestjs/common';
 import { BotService } from './bot.service';
-import { Request, Response } from 'express';
-import { AuthService } from './auth.service';
+import { Request, response, Response } from 'express';
+import Axios, { AxiosInstance } from "axios";
+import { createHmac, randomBytes } from 'crypto';
+import { stringify } from 'querystring';
+import { Method } from 'axios';
+import { OAuth } from "oauth"
 
 @Controller()
 export class AppController {
-  constructor(
-    private readonly botService: BotService,
-    private readonly authService: AuthService) {
+  axios: AxiosInstance;
+  accessToken: string;
+  accessTokenSecret: string;
+  callbackUrl: string;
+  oauth: OAuth;
+
+  constructor(private readonly botService: BotService) {
+    this.axios = Axios.create({
+      baseURL: "https://api.twitter.com",
+    })
+    this.callbackUrl = "https://d3154ff541b7.ngrok.io/callback"
+    this.oauth = new OAuth(
+      'https://api.twitter.com/oauth/request_token',
+      'https://api.twitter.com/oauth/access_token',
+      process.env.TWITTER_API_KEY,
+      process.env.TWITTER_API_KEY_SECRET,
+      '1.0A',
+      this.callbackUrl,
+      'HMAC-SHA1'
+    );
   }
 
   @Get("/ping")
@@ -17,18 +38,18 @@ export class AppController {
 
   @Get('/auth')
   async auth(@Req() req: Request, @Res() res: Response) {
-    const url = await this.authService.getRequestToken()
-    res.redirect(url)
+    this.oauth.getOAuthRequestToken(async (err, token, secret, results) => {
+      this.accessToken = token
+      this.accessTokenSecret = secret
+      res.redirect(`https://api.twitter.com/oauth/authorize?oauth_token=${token}`)
+    })
   }
 
   @Get("/callback")
-  async callback(@Req() req: Request): Promise<any> {
+  callback(@Req() req: Request): any {
     const { oauth_token, oauth_verifier } = req.query
-    const [token, secret] = await this.authService.getAccessToken(oauth_token, oauth_verifier)
-    this.botService.setCredentials(token, secret)
-    return `
-      BOT_ACCESS_TOKEN=${token}<br />
-      BOT_ACCESS_TOKEN_SECRET=${secret}<br />
-    `;
+    this.oauth.getOAuthAccessToken(this.accessToken, this.accessTokenSecret, oauth_verifier, (err, token, secret) => {
+      this.botService.setCredentials(token, secret)
+    })
   }
 }
