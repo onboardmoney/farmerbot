@@ -7,26 +7,23 @@
     "workspaces",
     "yarn"
   ],
-  "private": true,
+  "private": true,  
   "scripts": {
-    "subgraph:auth": "yarn workspace @farmerbot/subgraph auth",
-    "subgraph:codegen": "yarn workspace @farmerbot/subgraph codegen",
-    "subgraph:build": "yarn workspace @farmerbot/subgraph build",
-    "subgraph:deploy": "yarn workspace @farmerbot/subgraph deploy",
-    "react-app:build": "yarn workspace @farmerbot/react-app build",
-    "react-app:eject": "yarn workspace @farmerbot/react-app eject",
-    "react-app:start": "yarn workspace @farmerbot/react-app start",
-    "react-app:test": "yarn workspace @farmerbot/react-app test",
-    "bot:start": "yarn workspace @farmerbot/bot start"
-    
+    "clean": "rimraf */node_modules */dist && rimraf ./node_modules ./dist",
+    "subgraph": "yarn workspace @farmerbot/subgraph",
+    "react-app": "yarn workspace @farmerbot/react-app",
+    "bot": "yarn workspace @farmerbot/bot"
   },
   "workspaces": {
+    "packages": [
+      "packages/bot",
+      "packages/react-app",
+      "packages/subgraph"
+    ],
     "nohoist": [
       "**/@graphprotocol/graph-ts",
       "**/@graphprotocol/graph-ts/**"
-    ],
-    "packages": [
-      "packages/*"
     ]
+
   }
 }

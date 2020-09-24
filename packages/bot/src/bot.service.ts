@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { getAddress } from '@ethersproject/address';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { App } from '@onboardmoney/sdk';
 import { Cron } from '@nestjs/schedule';
 import Axios, { AxiosInstance } from "axios";
@@ -10,73 +11,66 @@ import { CommandService } from './command.service';
 
 @Injectable()
 export class BotService {
-  app: App;
   axios: AxiosInstance;
   name: string
   twit: Twitter
 
   constructor(private readonly db: DatabaseService,
-    private readonly commandService: CommandService) {
-    this.name = process.env.BOT_NAME ? process.env.BOT_NAME : "testtestxx"
-    this.app = new App(
-      process.env.OM_API_KEY,
-      `https://${process.env.NETWORK}.onboard.money`
-    );
+    private readonly commandService: CommandService,
+    @Inject("ONBOARD_MONEY") private readonly onboardmoney: App) {
 
+    this.name = process.env.BOT_NAME
     this.axios = Axios.create({
       baseURL: "https://api.twitter.com",
       headers: {
-        "Authorization": "Bearer ".concat(process.env.TWITTER_ACCESS_TOKEN)
+        "Authorization": "Bearer ".concat(process.env.TWITTER_V2_BEARER_TOKEN)
       }
     })
-    if (process.env.BOT_ACCESS_TOKEN && process.env.BOT_ACCESS_TOKEN_SECRET) {
+    if (this.hasCredentials()) {
       this.twit = Twitter({
         consumer_key: process.env.TWITTER_API_KEY,
         consumer_secret: process.env.TWITTER_API_KEY_SECRET,
         access_token: process.env.BOT_ACCESS_TOKEN,
         access_token_secret: process.env.BOT_ACCESS_TOKEN_SECRET
       })
-
     }
   }
 
-  setCredentials(token: string, tokenSecret: string) {
-    console.log('credentials', token, tokenSecret)
-    this.twit = Twitter({
-      consumer_key: process.env.TWITTER_API_KEY,
-      consumer_secret: process.env.TWITTER_API_KEY_SECRET,
-      access_token: token,
-      access_token_secret: tokenSecret
+  // TODO : make this configurable
+  @Cron("0 * * * * *")
+  async pullTweets() {
+    // get tweets
+    const tweets = await this.getTweets();
+
+    // parse them
+    const parsedTweets = tweets.map(({ id, text, author_id, author_name, entities }) => {
+      return {
+        id,
+        text,
+        author_name,
+        author: author_id,
+      }
     })
-  }
-  async processTweet(tweet: Tweet): Promise<void> {
-    const words = tweet.text.split(' ')
-    // words[0] should be the @ mention
-    // words[1] command
-    // words[2:] args
-    // console.log(words)
-    let user = await this.db.getUser(tweet.author)
 
-    if (!user) {
-      const { userAddress } = await this.app.createUser();
-      console.log('user created', userAddress)
-      user = await this.db.createUser(tweet.author, userAddress)
-      const message = "@" + tweet.author_name + " send your dai to " + userAddress
-      // await this.sendDM(tweet.author, message)
-      await this.reply(tweet, message)
-    }
-    console.log('User', user)
-    const [mention, command, ...args] = words;
+    Logger.debug(`Parsed tweets: ${parsedTweets.length}`)
 
-    await this.commandService.processCommand(user, command, args)
+    // store them in redis
+    await this.db.addTweets(parsedTweets)
   }
 
-  // this function will run every minute at second 30
-  @Cron("*/15 * * * * *")
+  // TODO : make this configurable
+  @Cron("15 * * * * *")
   async process(): Promise<void> {
+
+    if (!this.hasCredentials()) {
+      Logger.warn(`You can't process tweets without credentials!`)
+      return;
+    }
+
     // get parsed tweets from redis
     const tweets = await this.db.getTweets()
-    console.log('tweets to process', tweets.length)
+    Logger.debug(`tweets to process: ${tweets.length}`)
+
     if (tweets.length === 0) return;
 
     for (const tweet of tweets) {
@@ -88,23 +82,25 @@ export class BotService {
   private async getTweets(): Promise<any[]> {
     const lastTweetId = await this.db.getLastTweetId();
 
-    console.log('Fetching tweets since tweet', lastTweetId)
+    Logger.debug(`Fetching tweets since tweet: ${lastTweetId}`)
 
     // craft api call params
     const params = {
       query: "@" + this.name,
       expansions: "entities.mentions.username,author_id",
     }
+
     if (lastTweetId !== null) {
       params['since_id'] = lastTweetId
     }
 
-    // pull tweets from twitter
+    // search for tweets mentioning the bot
     const { data } = await this.axios.get('/2/tweets/search/recent', { params })
 
     const tweets = data.data
-    console.log('getTweets', tweets)
     if (tweets === undefined) return [];
+
+    Logger.debug(`Got ${tweets.length} tweets`)
 
     // get users from every included user entity
     const users = data.includes.users.reduce((obj, item) => {
@@ -121,6 +117,63 @@ export class BotService {
       }
       return t
     })
+  }
+
+  async processTweet(tweet: Tweet): Promise<void> {
+    const words = tweet.text.split(' ')
+
+    // This only supports tweets like "@botname command arg1 arg2 ..."
+    // And DO NOT support tweets like  "(n words) @botname command args"
+    const [mention, command, ...args] = words;
+
+    let user = await this.db.getUser(tweet.author)
+
+    if (!user) {
+      const { userAddress } = await this.onboardmoney.createUser();
+      Logger.debug(`wallet created for ${tweet.author}: ${userAddress}`)
+      user = await this.db.createUser(tweet.author, getAddress(userAddress))
+      const message = `@${tweet.author_name} send your dai to ${userAddress}`
+      // await this.sendDM(tweet.author, message)
+      await this.reply(tweet, message)
+    }
+
+    // process the command
+    await this.commandService.processCommand(user, command, args)
+  }
+
+  hasCredentials() {
+    const token = process.env.BOT_ACCESS_TOKEN
+    const secret = process.env.BOT_ACCESS_TOKEN_SECRET
+    return token != undefined && token.length > 0 && secret != undefined && secret.length > 0
+  }
+
+  setCredentials(token: string, tokenSecret: string) {
+    // ugly
+    process.env.BOT_ACCESS_TOKEN = token
+    process.env.BOT_ACCESS_TOKEN_SECRET = tokenSecret
+
+    // create twitter instance with fresh access token
+    this.twit = Twitter({
+      consumer_key: process.env.TWITTER_API_KEY,
+      consumer_secret: process.env.TWITTER_API_KEY_SECRET,
+      access_token: token,
+      access_token_secret: tokenSecret
+    })
+  }
+
+  private async reply(tweet: Tweet, message: string): Promise<any> {
+    const params = {
+      status: message,
+      in_reply_to_status_id: tweet.id,
+
+    }
+    this.twit.post(
+      'statuses/update',
+      params,
+      (err, resp) => {
+        if (err) Logger.error(err)
+      }
+    )
   }
 
   private async sendDM(recepient: string, message: string): Promise<any> {
@@ -141,43 +194,8 @@ export class BotService {
       'direct_messages/events/new',
       params,
       (resp, err) => {
-        console.log(resp, err)
+        if (err) Logger.error(err)
       }
     )
-  }
-
-  private async reply(tweet: Tweet, message: string): Promise<any> {
-    const params = {
-      status: message,
-      in_reply_to_status_id: tweet.id,
-
-    }
-    this.twit.post(
-      'statuses/update',
-      params,
-      (err, resp) => {
-        // console.log('reply', err, resp)
-      }
-    )
-  }
-  // this function will run every minute at second 0
-  @Cron("*/15 * * * * *")
-  async pullTweets() {
-
-    const tweets = await this.getTweets();
-
-    // parse them
-    const parsedTweets = tweets.map(({ id, text, author_id, author_name, entities }) => {
-      return {
-        id,
-        text,
-        author_name,
-        author: author_id,
-      }
-    })
-    console.log('parsed tweets:', parsedTweets)
-
-    // store them in redis
-    await this.db.addTweets(parsedTweets)
   }
 }

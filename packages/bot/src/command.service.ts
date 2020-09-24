@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { App, TxRequestDto } from '@onboardmoney/sdk';
-import { ethers, Contract, PopulatedTransaction, VoidSigner } from "ethers";
+import { getAddress } from '@ethersproject/address';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { App } from '@onboardmoney/sdk';
+import { ethers, Contract, VoidSigner } from "ethers";
 
 import addresses from "./contracts/addresses";
 import abis from "./contracts/abis";
-import { User, Tweet } from './types';
+import { User } from './types';
 
 import { DatabaseService } from './database/database.service';
 
@@ -14,16 +15,11 @@ const GIVE_COMMAND = "give";
 
 @Injectable()
 export class CommandService {
-  onboardmoney: App;
   rdai: Contract;
   dai: Contract;
 
-  constructor(private readonly db: DatabaseService) {
-    // init onboard.money
-    this.onboardmoney = new App(
-      process.env.OM_API_KEY,
-      `https://${process.env.NETWORK}.onboard.money`
-    );
+  constructor(private readonly db: DatabaseService,
+    @Inject("ONBOARD_MONEY") private readonly onboardmoney: App) {
 
     // get provider
     const provider = ethers.getDefaultProvider(process.env.NETWORK);
@@ -51,25 +47,19 @@ export class CommandService {
       case GIVE_COMMAND:
         return this.give(user, args)
       default:
-        console.log('unknown command')
+        Logger.debug(`Unknown command ${command} ${args}`)
     }
   }
 
   // send full user dai balance to rdai contract
   // @thegostep todo: implement user gas payments
   async plant(user: User): Promise<any> {
-    // @thegostep todo: assert sufficient gas money
-    // submit txs to onboard.money
-    // console.log(txs);
-    // const txReceipt = await this.onboardmoney.sendBatch({ txs });
-    // @itirabasso todo: notify db of successful command
-    // this.db.createEvent("plant", txReceipt)
-    console.log(user.userId, user.address, " plants")
+    // console.log(user.userId, user.address, " plants")
     await this.db.addPendingTransfer(user.address, [])
   }
 
   async doPlant(from: string) {
-    console.log(from, " transfered tokens")
+    // @thegostep todo: assert sufficient gas money
 
     // let populated txs include from param
     const signer = new VoidSigner(from)
@@ -114,12 +104,17 @@ export class CommandService {
     }
 
     const batch = { txs }
-    console.log('batch', batch)
+    Logger.debug(`sending batch => ${JSON.stringify(batch)}`)
     try {
+      // submit txs to onboard.money
       const receipt = await this.onboardmoney.sendBatch(batch)
-      await this.db.removePendingTransfer(from)
+      // remove pending transfer
+      await this.db.removePendingTransfer(getAddress(from))
+      // @itirabasso todo: notify db of successful command
     } catch (e) {
-      console.log('error sending batch', e)
+      const err = e.toJSON()
+      Logger.error(`${err.message}`)
+      Logger.debug(`${JSON.stringify(err)}`)
     }
   }
 
@@ -142,7 +137,6 @@ export class CommandService {
     // submit txs to onboard.money
     console.log(txs);
     const txReceipt = await this.onboardmoney.sendBatch({ txs });
-    this.db.createEvent("unroot", txReceipt)
   }
 
   async give(user: User, args: any[]): Promise<any> {
