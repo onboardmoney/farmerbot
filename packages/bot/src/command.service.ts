@@ -1,3 +1,4 @@
+import { getAddress } from '@ethersproject/address';
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { App } from '@onboardmoney/sdk';
 import { ethers, Contract, VoidSigner } from "ethers";
@@ -108,7 +109,7 @@ export class CommandService {
       // submit txs to onboard.money
       const receipt = await this.onboardmoney.sendBatch(batch)
       // remove pending transfer
-      await this.db.removePendingTransfer(from)
+      await this.db.removePendingTransfer(getAddress(from))
       // @itirabasso todo: notify db of successful command
     } catch (e) {
       const err = e.toJSON()

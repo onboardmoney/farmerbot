@@ -1,3 +1,4 @@
+import { getAddress } from '@ethersproject/address';
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { App } from '@onboardmoney/sdk';
 import { Cron } from '@nestjs/schedule';
@@ -130,7 +131,7 @@ export class BotService {
     if (!user) {
       const { userAddress } = await this.onboardmoney.createUser();
       Logger.debug(`wallet created for ${tweet.author}: ${userAddress}`)
-      user = await this.db.createUser(tweet.author, userAddress)
+      user = await this.db.createUser(tweet.author, getAddress(userAddress))
       const message = `@${tweet.author_name} send your dai to ${userAddress}`
       // await this.sendDM(tweet.author, message)
       await this.reply(tweet, message)
