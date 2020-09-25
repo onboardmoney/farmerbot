@@ -9,3 +9,10 @@ export interface User {
   userId: string;
   address: string;
 }
+
+export interface CommandContext {
+  user: User;
+  tweet: Tweet;
+  command: string;
+  args: any[];
+}
