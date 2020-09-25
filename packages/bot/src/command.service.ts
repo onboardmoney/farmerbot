@@ -1,4 +1,5 @@
 import { getAddress } from '@ethersproject/address';
+import { InfuraProvider } from '@ethersproject/providers';
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { App } from '@onboardmoney/sdk';
 import { ethers, Contract, VoidSigner } from "ethers";
@@ -24,7 +25,7 @@ export class CommandService {
     @Inject("ONBOARD_MONEY") private readonly onboardmoney: App) {
 
     // get provider
-    const provider = ethers.getDefaultProvider(process.env.NETWORK);
+    const provider = new InfuraProvider(process.env.NETWORK, process.env.INFURA_ID);
 
     // init contracts
     this.rdai = new ethers.Contract(
