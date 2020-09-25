@@ -10,6 +10,7 @@ import { DatabaseService } from './database/database.service';
 import { SubGraphService } from './subgraph.service';
 
 import { App } from '@onboardmoney/sdk';
+import { TwitterService } from './twitter.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { App } from '@onboardmoney/sdk';
     ScheduleModule.forRoot()
   ],
   controllers: [AppController],
-  providers: [AuthService, BotService, DatabaseService, CommandService, SubGraphService, {
+  providers: [AuthService, BotService, DatabaseService, CommandService, SubGraphService, TwitterService, {
     provide: 'ONBOARD_MONEY',
     useValue: new App(process.env.OM_API_KEY, `https://${process.env.NETWORK}.onboard.money`)
   }],
