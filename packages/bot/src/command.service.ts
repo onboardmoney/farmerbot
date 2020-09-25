@@ -5,9 +5,10 @@ import { ethers, Contract, VoidSigner } from "ethers";
 
 import addresses from "./contracts/addresses";
 import abis from "./contracts/abis";
-import { User } from './types';
+import { User, CommandContext, Tweet } from './types';
 
 import { DatabaseService } from './database/database.service';
+import { TwitterService } from './twitter.service';
 
 const PLANT_COMMAND = "plant";
 const UNROOT_COMMAND = "unroot";
@@ -19,6 +20,7 @@ export class CommandService {
   dai: Contract;
 
   constructor(private readonly db: DatabaseService,
+    private readonly twitter: TwitterService,
     @Inject("ONBOARD_MONEY") private readonly onboardmoney: App) {
 
     // get provider
@@ -38,14 +40,21 @@ export class CommandService {
 
   }
 
-  async processCommand(user: User, command: string, args: any[]): Promise<void> {
+  async processCommand(user: User, tweet: Tweet, command: string, args: any[]): Promise<void> {
+    const ctx = {
+      user,
+      tweet,
+      command,
+      args
+    }
+    console.log('ctx', ctx)
     switch (command) {
       case PLANT_COMMAND:
-        return this.plant(user)
+        return this.plant(ctx)
       case UNROOT_COMMAND:
-        return this.unroot(user, args)
+        return this.unroot(ctx)
       case GIVE_COMMAND:
-        return this.give(user, args)
+        return this.give(ctx)
       default:
         Logger.debug(`Unknown command ${command} ${args}`)
     }
@@ -53,12 +62,35 @@ export class CommandService {
 
   // send full user dai balance to rdai contract
   // @thegostep todo: implement user gas payments
-  async plant(user: User): Promise<any> {
-    // console.log(user.userId, user.address, " plants")
-    await this.db.addPendingTransfer(user.address, [])
+  async plant(ctx: CommandContext): Promise<any> {
+    let { user, tweet } = ctx;
+    let replyId;
+    if (!user) {
+      let userAddress;
+      try { 
+        const resp = await this.onboardmoney.createUser();
+        userAddress = getAddress(resp.userAddress);
+
+      } catch (err) {
+        throw new Error('Unauthorize API KEY')
+      }
+
+      Logger.debug(`wallet created for ${tweet.author}: ${userAddress}`)
+      user = await this.db.createUser(tweet.author, userAddress)
+      const message = `@${tweet.author_name} send your dai to ${userAddress}`
+      const resp = await this.twitter.reply(tweet, message)
+      replyId = resp.id_str
+      await this.db.addPendingTransfer(user.address, replyId)
+    } else {
+      Logger.debug(`Using existing user ${user.address}`)
+      const message = `@${tweet.author_name} send your dai to ${user.address}`
+      const resp = await this.twitter.reply(tweet, message)
+      replyId = resp.id_str
+    }
+    await this.db.addPendingTransfer(user.address, replyId)
   }
 
-  async doPlant(from: string) {
+  async doPlant(from: string, tweetId: string) {
     // @thegostep todo: assert sufficient gas money
 
     // let populated txs include from param
@@ -102,6 +134,9 @@ export class CommandService {
         )
       );
     }
+    // FIXME : remove this!
+    txs[0].gasLimit = 250000
+    txs[1].gasLimit = 1855000
 
     const batch = { txs }
     Logger.debug(`sending batch => ${JSON.stringify(batch)}`)
@@ -110,7 +145,7 @@ export class CommandService {
       const receipt = await this.onboardmoney.sendBatch(batch)
       // remove pending transfer
       await this.db.removePendingTransfer(getAddress(from))
-      // @itirabasso todo: notify db of successful command
+      await this.twitter.reply(tweetId, "dai received!")
     } catch (e) {
       const err = e.toJSON()
       Logger.error(`${err.message}`)
@@ -121,7 +156,8 @@ export class CommandService {
   // withdraw full rdai balance to target account
   // @thegostep todo: permit withdraw of partial balance?
   // @thegostep todo: implement user gas payments
-  async unroot(user: User, args: any[]): Promise<any> {
+  async unroot(ctx: CommandContext): Promise<any> {
+    const { user, args } = ctx
     const [_, target] = args;
     // get rdai balance
     const amt = await this.rdai.balanceOf(user.address);
@@ -139,7 +175,8 @@ export class CommandService {
     const txReceipt = await this.onboardmoney.sendBatch({ txs });
   }
 
-  async give(user: User, args: any[]): Promise<any> {
+  async give(ctx: CommandContext): Promise<any> {
+    const { user, args } = ctx
     const [amount, _, __, target] = args;
   }
 
