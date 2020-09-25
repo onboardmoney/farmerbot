@@ -19,8 +19,7 @@ export class BotService {
     this.name = process.env.BOT_NAME
   }
 
-  // TODO : make this configurable
-  @Cron(process.env.CRON_TIME)
+  @Cron(process.env.CRON_TIME || "0 * * * * *")
   async pullTweets() {
     // get tweets
     const tweets = await this.getTweets();
@@ -44,7 +43,7 @@ export class BotService {
   }
 
   // TODO : make this configurable
-  @Cron(process.env.CRON_TIME)
+  @Cron(process.env.CRON_TIME || "15 * * * * *")
   async process(): Promise<void> {
 
     if (!this.twitter.hasCredentials()) {
@@ -79,7 +78,6 @@ export class BotService {
     let user = await this.db.getUser(tweet.author)
 
     // process the command
-    Logger.debug('about to process')
     await this.commandService.processCommand(user, tweet, command, args)
   }
 

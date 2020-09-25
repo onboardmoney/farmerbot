@@ -47,7 +47,6 @@ export class CommandService {
       command,
       args
     }
-    console.log('ctx', ctx)
     switch (command) {
       case PLANT_COMMAND:
         return this.plant(ctx)

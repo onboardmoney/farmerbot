@@ -61,7 +61,6 @@ export class TwitterService {
     }
 
     // pull tweets which mention the bot
-    // console.log(this.axios, params)
     const { data } = await this.axios.get('/2/tweets/search/recent', { params })
     const tweets = data.data
 

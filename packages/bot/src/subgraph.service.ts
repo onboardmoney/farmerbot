@@ -21,7 +21,7 @@ export class SubGraphService {
     });
   }
 
-  @Cron("45 * * * * *")
+  @Cron(process.env.CRON_TIME || "45 * * * * *")
   async getTransfers() {
     const query = {
       query: `{
