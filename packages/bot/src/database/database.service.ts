@@ -38,19 +38,19 @@ export class DatabaseService implements OnModuleInit {
     return JSON.parse(user)
   }
 
-  async addPendingTransfer(sender: string, txs: any[]) {
+  async addPendingTransfer(sender: string, tweetId: string) {
     Logger.debug(`Adding pending tranfer from: ${sender}`)
-    return this.client.sadd('pending_transfers', sender)
+    return this.client.hset('pending_transfers', sender, tweetId)
   }
 
-  async getPendingTransfers(): Promise<string[]> {
-    return this.client.smembers('pending_transfers')
+  async getPendingTransfers(): Promise<Record<string, string>> {
+    return this.client.hgetall('pending_transfers')
   }
 
   async removePendingTransfer(sender: string): Promise<boolean> {
     Logger.debug(`Removing pending transfer from ${sender}`)
-    const removed = await this.client.srem('pending_transfers', sender)
-    return removed > 0;
+    const removed = await this.client.hdel('pending_transfers', sender)
+    return removed > 0
   }
 
   async addTweets(tweets: Tweet[]): Promise<void> {
