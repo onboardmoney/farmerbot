@@ -132,7 +132,7 @@ export class BotService {
       const { userAddress } = await this.onboardmoney.createUser();
       Logger.debug(`wallet created for ${tweet.author}: ${userAddress}`)
       user = await this.db.createUser(tweet.author, getAddress(userAddress))
-      const message = `@${tweet.author_name} Welcome to farm club! Ready to plant some trees with your yield? Deposit some Dai here: ${userAddress}`
+      const message = `@${tweet.author_name} Welcome to the farm club! Ready to donate yield to plant trees? Deposit some kovan Dai to ${userAddress}`
       // await this.sendDM(tweet.author, message)
       await this.reply(tweet, message)
     }
