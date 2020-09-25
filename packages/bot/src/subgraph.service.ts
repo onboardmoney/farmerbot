@@ -4,6 +4,7 @@ import axios, { AxiosInstance } from "axios";
 import { Cron } from '@nestjs/schedule';
 import { CommandService } from './command.service';
 import { formatUnits } from '@ethersproject/units';
+import { getAddress } from '@ethersproject/address';
 
 @Injectable()
 export class SubGraphService {
@@ -42,14 +43,14 @@ export class SubGraphService {
     if (data === undefined) return;
     const { transfers } = data.data;
 
-    // map all addresses to upper case
-    const pending = (await this.db.getPendingTransfers()).map(s => s.toUpperCase())
-
+    const pending = await this.db.getPendingTransfers()
+    
     for (const transfer of transfers) {
-      if (pending.includes(transfer.to.toUpperCase())) {
-        Logger.debug(`${transfer.to} deposited ${formatUnits(transfer.value)} DAI`)
-        await this.cmdService.doPlant(transfer.to)
-      }
+      let addr = getAddress(transfer.to);
+      if (pending[addr] === undefined) continue;
+
+      Logger.debug(`${transfer.to} deposited ${formatUnits(transfer.value)} DAI`)
+      await this.cmdService.doPlant(addr, pending[addr])
     }
   }
 }
